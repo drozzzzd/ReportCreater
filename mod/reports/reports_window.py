@@ -137,6 +137,20 @@ class ReportsWindow(QWidget):
         workflow_layout.setContentsMargins(0, 0, 0, 0)
         workflow_layout.setSpacing(8)
 
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setObjectName("workflowScrollArea")
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        workflow_layout.addWidget(self.scroll_area, 1)
+
+        self.workflow_content = QWidget()
+        self.workflow_content.setObjectName("workflowScrollContent")
+        self.scroll_area.setWidget(self.workflow_content)
+        workflow_content_layout = QVBoxLayout(self.workflow_content)
+        workflow_content_layout.setContentsMargins(0, 0, 0, 0)
+        workflow_content_layout.setSpacing(8)
+
         self.side_panel = QWidget()
         self.side_panel.setObjectName("sidePanel")
         self.side_panel.setMinimumWidth(300)
@@ -210,7 +224,7 @@ class ReportsWindow(QWidget):
         top_panel.addWidget(self.reset_cache_btn, 0, Qt.AlignmentFlag.AlignTop)
         top_panel.addWidget(self.hero_collapse_btn, 0, Qt.AlignmentFlag.AlignTop)
         hero_layout.addLayout(top_panel, 1)
-        workflow_layout.addWidget(self.hero_panel)
+        workflow_content_layout.addWidget(self.hero_panel)
         apply_shadow(self.hero_panel, blur_radius=26, y_offset=7, alpha=18)
 
         self.hero_collapsed_bar = QFrame()
@@ -230,7 +244,7 @@ class ReportsWindow(QWidget):
         self.hero_expand_btn.setFixedHeight(24)
         self.hero_expand_btn.clicked.connect(lambda: self.set_hero_collapsed(False))
         hero_collapsed_layout.addWidget(self.hero_expand_btn)
-        workflow_layout.addWidget(self.hero_collapsed_bar)
+        workflow_content_layout.addWidget(self.hero_collapsed_bar)
 
         self.meta_group = QGroupBox("Параметры отчета")
         self.meta_group.setObjectName("metaGroup")
@@ -316,7 +330,7 @@ class ReportsWindow(QWidget):
         meta_layout.addRow("SIR:", self.sir_input)
         meta_layout.addRow("Исполнитель:", self.performer_input)
         meta_layout.addRow("Следующее вложение:", self.next_attachment_label)
-        workflow_layout.addWidget(self.meta_group)
+        workflow_content_layout.addWidget(self.meta_group)
 
         self.meta_collapsed_bar = QFrame()
         self.meta_collapsed_bar.setObjectName("metaCollapsedBar")
@@ -337,7 +351,7 @@ class ReportsWindow(QWidget):
         self.meta_expand_btn.setFixedHeight(24)
         self.meta_expand_btn.clicked.connect(lambda: self.set_meta_collapsed(False))
         collapsed_layout.addWidget(self.meta_expand_btn)
-        workflow_layout.addWidget(self.meta_collapsed_bar)
+        workflow_content_layout.addWidget(self.meta_collapsed_bar)
 
         for widget in [
             self.build_input,
@@ -351,18 +365,13 @@ class ReportsWindow(QWidget):
         ]:
             install_clearable_context_menu(widget)
 
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-
         self.sections_host = QWidget()
         self.sections_layout = QVBoxLayout(self.sections_host)
         self.sections_layout.setContentsMargins(0, 0, 0, 0)
         self.sections_layout.setSpacing(10)
         self.sections_layout.addStretch()
 
-        self.scroll_area.setWidget(self.sections_host)
-        workflow_layout.addWidget(self.scroll_area, 1)
+        workflow_content_layout.addWidget(self.sections_host, 1)
 
         self.preview_shell = QFrame()
         self.preview_shell.setObjectName("previewShell")
