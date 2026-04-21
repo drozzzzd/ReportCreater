@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "updated_at": "2026-04-21T15:15:00",
+  "meta_collapsed": false,
+  "metadata": {
+    "build": "",
+    "database": "",
+    "sir": "",
+    "performer": "",
+    "include_sql": true,
+    "sql_value": "",
+    "include_doc": true,
+    "doc_value": "",
+    "include_tax_reference": true,
+    "tax_reference_value": ""
+  },
+  "output_dir": "C:\\divan_api_tester\\.tmp_test\\text_reports",
+  "sections": [
+    {
+      "title": "",
+      "precondition": "",
+      "scenario": "",
+      "issue_type": "Текст",
+      "issue_text": "123"
+    }
+  ],
+  "attachment_counters": []
+}

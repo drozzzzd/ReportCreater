@@ -1,19 +1,2 @@
-__pycache__/
-*.py[cod]
-*$py.class
-
-.venv/
-build_env/
-.tmp_test/
-
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-build/
-dist/
-*.spec
-
-reports/.report_builder_session_cache.json
-reports/text_reports/*.txt
-
+# Local generated reports and draft autosave data.
+/reports/
