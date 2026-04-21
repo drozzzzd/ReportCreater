@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit
 
 import main as app_main
 from mod.reports.report_section_widget import ResizablePlainTextEdit
-from mod.reports.reports_window import ReportsWindow
+from mod.reports.reports_window import ReportsWindow, SmoothScrollArea
 
 
 class ReportBuilderStandaloneTests(unittest.TestCase):
@@ -59,6 +59,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertIsNotNone(self.window.hero_panel)
         self.assertFalse(self.window.hero_panel.isHidden())
         self.assertIs(self.window.scroll_area.widget(), self.window.workflow_content)
+        self.assertIsInstance(self.window.scroll_area, SmoothScrollArea)
         self.assertIs(self.window.hero_panel.parentWidget(), self.window.workflow_content)
         self.assertIs(self.window.meta_group.parentWidget(), self.window.workflow_content)
         self.assertIs(self.window.sections_host.parentWidget(), self.window.workflow_content)
@@ -86,7 +87,13 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertIsInstance(section.issue_text, ResizablePlainTextEdit)
         self.assertEqual(section.pre_text.height(), 58)
         self.assertEqual(section.scenario_text.height(), 58)
-        self.assertEqual(section.issue_text.height(), 174)
+        self.assertEqual(section.issue_text.height(), 58)
+        section.issue_text.setPlainText("\n".join(f"line {index}" for index in range(12)))
+        self.app.processEvents()
+        self.assertGreater(section.issue_text.height(), 58)
+        section.issue_text.clear()
+        self.app.processEvents()
+        self.assertEqual(section.issue_text.height(), 58)
         self.assertIs(self.window.sections_layout.itemAt(0).widget(), section)
         self.assertIs(section.root_layout.itemAt(3).widget(), section.issue_group)
 

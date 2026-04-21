@@ -5,7 +5,7 @@ from collections.abc import Callable
 import os
 
 from PyQt6.QtCore import QPoint, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon, QMouseEvent, QPainter, QPen
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -102,73 +102,42 @@ class IssueTypeSegmentedControl(QWidget):
 
 
 class ResizablePlainTextEdit(QPlainTextEdit):
-    HANDLE_SIZE = 14
-    MIN_EDITOR_HEIGHT = 72
+    MIN_EDITOR_HEIGHT = 42
+    HEIGHT_PADDING = 16
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._resizing = False
-        self._resize_origin = QPoint()
-        self._start_height = 0
-        self.setMouseTracking(True)
-        self.setMinimumHeight(self.MIN_EDITOR_HEIGHT)
+        self._base_height = self.MIN_EDITOR_HEIGHT
+        self.setMinimumHeight(self._base_height)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+        self.textChanged.connect(self.adjust_height_to_content)
+        self.document().documentLayout().documentSizeChanged.connect(lambda *_: self.adjust_height_to_content())
 
-    def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton and self._is_in_resize_corner(event.position().toPoint()):
-            self._resizing = True
-            self._resize_origin = event.globalPosition().toPoint()
-            self._start_height = self.height()
-            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
-            event.accept()
-            return
-        super().mousePressEvent(event)
+    def set_base_height(self, height: int):
+        self._base_height = max(self.MIN_EDITOR_HEIGHT, height)
+        self.setMinimumHeight(self._base_height)
+        self.adjust_height_to_content()
 
-    def mouseMoveEvent(self, event: QMouseEvent):
-        if self._resizing:
-            delta = event.globalPosition().toPoint() - self._resize_origin
-            new_height = max(self.MIN_EDITOR_HEIGHT, self._start_height + delta.y())
-            self.setFixedHeight(new_height)
-            event.accept()
-            return
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.adjust_height_to_content()
 
-        if self._is_in_resize_corner(event.position().toPoint()):
-            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
-        else:
-            self.unsetCursor()
-        super().mouseMoveEvent(event)
+    def adjust_height_to_content(self):
+        document_width = max(1, self.viewport().width())
+        if int(self.document().textWidth()) != document_width:
+            self.document().setTextWidth(document_width)
 
-    def mouseReleaseEvent(self, event: QMouseEvent):
-        if self._resizing and event.button() == Qt.MouseButton.LeftButton:
-            self._resizing = False
-            if not self._is_in_resize_corner(event.position().toPoint()):
-                self.unsetCursor()
-            event.accept()
-            return
-        super().mouseReleaseEvent(event)
+        document_height = 0
+        block = self.document().firstBlock()
+        while block.isValid():
+            document_height += max(self.blockBoundingRect(block).height(), self.fontMetrics().lineSpacing())
+            block = block.next()
 
-    def leaveEvent(self, event):
-        if not self._resizing:
-            self.unsetCursor()
-        super().leaveEvent(event)
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-
-        painter = QPainter(self.viewport())
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
-        pen = QPen(QColor("#94A3B8"))
-        pen.setWidth(1)
-        painter.setPen(pen)
-
-        rect = self.viewport().rect()
-        right = rect.right() - 4
-        bottom = rect.bottom() - 4
-        for offset in (0, 4, 8):
-            painter.drawLine(right - offset - 4, bottom, right, bottom - offset - 4)
-
-    def _is_in_resize_corner(self, pos: QPoint) -> bool:
-        rect = self.viewport().rect()
-        return pos.x() >= rect.right() - self.HANDLE_SIZE and pos.y() >= rect.bottom() - self.HANDLE_SIZE
+        frame_height = self.frameWidth() * 2
+        target_height = max(self._base_height, int(document_height) + frame_height + self.HEIGHT_PADDING)
+        if self.height() != target_height:
+            self.setFixedHeight(target_height)
 
 
 class ReportSectionWidget(QFrame):
@@ -244,7 +213,7 @@ class ReportSectionWidget(QFrame):
 
         editor = ResizablePlainTextEdit()
         editor.setPlaceholderText(f"Заполните блок {title}")
-        editor.setFixedHeight(84)
+        editor.set_base_height(84)
 
         if with_modes:
             layout.addLayout(self._create_modes_row(editor))
@@ -306,7 +275,7 @@ class ReportSectionWidget(QFrame):
 
         editor = ResizablePlainTextEdit()
         editor.setPlaceholderText("Опишите ошибку или сформулируйте вопрос")
-        editor.setFixedHeight(78)
+        editor.set_base_height(78)
 
         rus_button.clicked.connect(lambda: self._insert_text(editor, "' '"))
         dash_button.clicked.connect(lambda: self._insert_text(editor, " - "))
@@ -405,9 +374,9 @@ class ReportSectionWidget(QFrame):
             self.title_input.setMinimumHeight(30)
             self.remove_btn.setMinimumHeight(30)
             self.issue_type_combo.setFixedWidth(228)
-            self.pre_text.setFixedHeight(58)
-            self.scenario_text.setFixedHeight(58)
-            self.issue_text.setFixedHeight(174)
+            self.pre_text.set_base_height(58)
+            self.scenario_text.set_base_height(58)
+            self.issue_text.set_base_height(58)
             for button in self.mode_buttons:
                 button.setFixedHeight(28)
                 button.setMinimumWidth(116)
@@ -420,9 +389,9 @@ class ReportSectionWidget(QFrame):
             self.title_input.setMinimumHeight(38)
             self.remove_btn.setMinimumHeight(36)
             self.issue_type_combo.setFixedWidth(250)
-            self.pre_text.setFixedHeight(92)
-            self.scenario_text.setFixedHeight(92)
-            self.issue_text.setFixedHeight(240)
+            self.pre_text.set_base_height(92)
+            self.scenario_text.set_base_height(92)
+            self.issue_text.set_base_height(92)
             for button in self.mode_buttons:
                 button.setFixedHeight(38)
                 button.setMinimumWidth(156)

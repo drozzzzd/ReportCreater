@@ -8,7 +8,7 @@ import re
 import json
 from datetime import datetime
 
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import QAbstractAnimation, QEasingCurve, QPropertyAnimation, Qt, QUrl
 from PyQt6.QtGui import QDesktopServices, QTextOption
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -40,6 +40,41 @@ from .report_utils import (
     set_invalid_state,
 )
 from .text_report_builder import ReportMetadata, ReportSectionData, TextReportBuilder, TextReportParser
+
+
+class SmoothScrollArea(QScrollArea):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._scroll_target = 0
+        self._scroll_animation = QPropertyAnimation(self.verticalScrollBar(), b"value", self)
+        self._scroll_animation.setDuration(180)
+        self._scroll_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.verticalScrollBar().setSingleStep(24)
+
+    def wheelEvent(self, event):
+        pixel_delta = event.pixelDelta().y()
+        angle_delta = event.angleDelta().y()
+        if pixel_delta == 0 and angle_delta == 0:
+            super().wheelEvent(event)
+            return
+
+        bar = self.verticalScrollBar()
+        if self._scroll_animation.state() == QAbstractAnimation.State.Running:
+            base_target = self._scroll_target
+        else:
+            base_target = bar.value()
+
+        if pixel_delta:
+            distance = -pixel_delta
+        else:
+            distance = int(-(angle_delta / 120) * 72)
+
+        self._scroll_target = max(bar.minimum(), min(bar.maximum(), base_target + distance))
+        self._scroll_animation.stop()
+        self._scroll_animation.setStartValue(bar.value())
+        self._scroll_animation.setEndValue(self._scroll_target)
+        self._scroll_animation.start()
+        event.accept()
 
 
 class ValidationIssuesDialog(QDialog):
@@ -137,7 +172,7 @@ class ReportsWindow(QWidget):
         workflow_layout.setContentsMargins(0, 0, 0, 0)
         workflow_layout.setSpacing(8)
 
-        self.scroll_area = QScrollArea()
+        self.scroll_area = SmoothScrollArea()
         self.scroll_area.setObjectName("workflowScrollArea")
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
