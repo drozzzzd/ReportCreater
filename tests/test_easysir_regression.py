@@ -227,6 +227,30 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         )
         self.assertNotIn("'Tax Reference'", text)
 
+    def test_tax_reference_user_help_menu_uses_split_rows_and_partial_paths(self):
+        section = self.window.sections[0]
+        self.window.tax_reference_input.setText("Tax User Value")
+        document_name = "Журнал сформированных справок для налоговых"
+
+        self.assertEqual(
+            section.menu_manager.get_tax_reference_items(),
+            [
+                document_name,
+                document_name,
+                "Отчет по сформ.справкам в старой версии программы",
+                "Отчет по предоставленным справкам",
+                "Справка для налоговой",
+            ],
+        )
+
+        section._insert_tax_reference_entry(section.pre_text, (document_name,))
+        self.app.processEvents()
+
+        self.assertEqual(
+            section.pre_text.toPlainText().strip(),
+            "'Tax User Value' - tabmenu 'Документы' - 'Журнал сформированных справок для налоговых'",
+        )
+
     def test_tax_reference_user_help_menu_contains_required_paths(self):
         paths = [
             self.window.sections[0].menu_manager.format_tax_reference_entry("Tax User Value", path)
