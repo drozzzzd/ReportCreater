@@ -9,11 +9,51 @@ class DropdownMenuManager:
     TAX_REFERENCE_BUTTON_NAME = "Справка ФНС"
     TAX_REFERENCE_SYSTEM_NAME = "Tax Reference"
     TAX_REFERENCE_MENU_NAME = "Документы"
-    TAX_REFERENCE_ITEMS = [
-        "Справка для налоговой",
-        "Отчет по предоставленным справкам",
-        "Отчет по сформ.справкам в старой версии программы",
-        "Журнал сформированных справок для налоговых",
+    TAX_REFERENCE_ENTRIES = [
+        (
+            "Журнал сформированных справок для налоговых: по году справки",
+            (
+                "Журнал сформированных справок для налоговых",
+                "по году справки",
+                "выбрать год",
+                "Просмотр",
+            ),
+        ),
+        (
+            "Журнал сформированных справок для налоговых: по дате справки",
+            (
+                "Журнал сформированных справок для налоговых",
+                "по дате справки",
+                "выбрать период",
+                "Просмотр",
+            ),
+        ),
+        (
+            "Отчет по сформ.справкам в старой версии программы",
+            (
+                "Отчет по сформ.справкам в старой версии программы",
+                "выбрать период",
+                "Просмотр",
+            ),
+        ),
+        (
+            "Отчет по предоставленным справкам",
+            (
+                "Отчет по предоставленным справкам",
+                "выбрать период/пациента",
+                "Просмотр",
+            ),
+        ),
+        (
+            "Справка для налоговой",
+            (
+                "Справка для налоговой",
+                "№ карты",
+                "Найти",
+                "Год справки",
+                "Показать платежи пациента",
+            ),
+        ),
     ]
     MODE_MENU_ITEMS = [
         "Книга записи на прием",
@@ -960,7 +1000,10 @@ class DropdownMenuManager:
         return list(self.laboratories_menu_names)
 
     def get_tax_reference_items(self) -> list[str]:
-        return list(self.TAX_REFERENCE_ITEMS)
+        return [label for label, _ in self.TAX_REFERENCE_ENTRIES]
+
+    def get_tax_reference_entries(self) -> list[tuple[str, tuple[str, ...]]]:
+        return [(label, tuple(path)) for label, path in self.TAX_REFERENCE_ENTRIES]
 
     def get_laboratories_tabs(self, menu_name: str) -> list[str]:
         return list(self.laboratories_tabs.get(menu_name, []))
@@ -992,9 +1035,11 @@ class DropdownMenuManager:
     def format_attachment(self, sir_value: str) -> str:
         return f"attachment:{sir_value}" if sir_value else "attachment:"
 
-    def format_tax_reference_entry(self, tax_reference_value: str, item: str) -> str:
-        title = tax_reference_value.strip() or "Tax Referens"
-        return f"'{title}' - tabmenu '{self.TAX_REFERENCE_MENU_NAME}' - '{item}'"
+    def format_tax_reference_entry(self, tax_reference_value: str, path: str | tuple[str, ...]) -> str:
+        title = tax_reference_value.strip() or self.TAX_REFERENCE_SYSTEM_NAME
+        path_parts = (path,) if isinstance(path, str) else path
+        formatted_path = " - ".join(f"'{part}'" for part in path_parts)
+        return f"'{title}' - tabmenu '{self.TAX_REFERENCE_MENU_NAME}' - {formatted_path}"
 
     def format_appointment_entry(self, menu_name: str, item: str) -> str:
         return f"'режим' - '{self.APPOINTMENT_MODE_NAME}' - tabmenu '{menu_name}' - '{item}'"

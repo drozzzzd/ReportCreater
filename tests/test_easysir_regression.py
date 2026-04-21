@@ -192,12 +192,46 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
     def test_tax_reference_user_help_menu_uses_tax_reference_field_value(self):
         section = self.window.sections[0]
         self.window.tax_reference_input.setText("Tax User Value")
-        section._insert_tax_reference_entry(section.pre_text, "Справка для налоговой")
+        entry = next(
+            path
+            for label, path in section.menu_manager.get_tax_reference_entries()
+            if label == "Справка для налоговой"
+        )
+        section._insert_tax_reference_entry(section.pre_text, entry)
         self.app.processEvents()
 
         text = section.pre_text.toPlainText()
-        self.assertIn("'Tax User Value' - tabmenu 'Документы' - 'Справка для налоговой'", text)
+        self.assertIn(
+            "'Tax User Value' - tabmenu 'Документы' - 'Справка для налоговой' - '№ карты' - "
+            "'Найти' - 'Год справки' - 'Показать платежи пациента'",
+            text,
+        )
         self.assertNotIn("'Tax Reference'", text)
+
+    def test_tax_reference_user_help_menu_contains_required_paths(self):
+        paths = [
+            self.window.sections[0].menu_manager.format_tax_reference_entry("Tax User Value", path)
+            for _, path in self.window.sections[0].menu_manager.get_tax_reference_entries()
+        ]
+
+        self.assertEqual(
+            paths,
+            [
+                "'Tax User Value' - tabmenu 'Документы' - 'Журнал сформированных справок для налоговых' - "
+                "'по году справки' - 'выбрать год' - 'Просмотр'",
+                "'Tax User Value' - tabmenu 'Документы' - 'Журнал сформированных справок для налоговых' - "
+                "'по дате справки' - 'выбрать период' - 'Просмотр'",
+                "'Tax User Value' - tabmenu 'Документы' - 'Отчет по сформ.справкам в старой версии программы' - "
+                "'выбрать период' - 'Просмотр'",
+                "'Tax User Value' - tabmenu 'Документы' - 'Отчет по предоставленным справкам' - "
+                "'выбрать период/пациента' - 'Просмотр'",
+                "'Tax User Value' - tabmenu 'Документы' - 'Справка для налоговой' - '№ карты' - "
+                "'Найти' - 'Год справки' - 'Показать платежи пациента'",
+            ],
+        )
+
+    def test_tax_reference_icon_uses_fns_asset(self):
+        self.assertFalse(self.window.sections[0]._create_tax_reference_icon().isNull())
 
     def test_window_switches_splitter_orientation_on_resize(self):
         self.window.resize(1380, 900)

@@ -2,9 +2,10 @@
 Виджет одного раздела в конструкторе отчетов.
 """
 from collections.abc import Callable
+import os
 
 from PyQt6.QtCore import QPoint, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon, QMouseEvent, QPainter, QPen, QPixmap, QPolygon
+from PyQt6.QtGui import QColor, QIcon, QMouseEvent, QPainter, QPen
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -24,7 +25,7 @@ from PyQt6.QtWidgets import (
 
 from .flow_layout import FlowLayout
 from .report_menu_catalog import DropdownMenuManager
-from .report_utils import apply_shadow, install_clearable_context_menu, set_invalid_state
+from .report_utils import apply_shadow, get_project_root, install_clearable_context_menu, set_invalid_state
 from .text_report_builder import ReportSectionData
 
 
@@ -371,42 +372,24 @@ class ReportSectionWidget(QFrame):
 
     def _build_tax_reference_menu(self, editor: QPlainTextEdit) -> QMenu:
         menu = self._create_popup_menu(self)
-        for item in self.menu_manager.get_tax_reference_items():
+        for label, path in self.menu_manager.get_tax_reference_entries():
             self._add_leaf_menu_row(
                 menu,
-                item,
-                lambda value=item: self._insert_tax_reference_entry(editor, value),
+                label,
+                lambda value=path: self._insert_tax_reference_entry(editor, value),
             )
         return menu
 
-    def _insert_tax_reference_entry(self, editor: QPlainTextEdit, item: str):
+    def _insert_tax_reference_entry(self, editor: QPlainTextEdit, path: str | tuple[str, ...]):
         self._insert_line(
             editor,
-            self.menu_manager.format_tax_reference_entry(self.tax_reference_provider(), item),
+            self.menu_manager.format_tax_reference_entry(self.tax_reference_provider(), path),
         )
 
     @staticmethod
     def _create_tax_reference_icon() -> QIcon:
-        pixmap = QPixmap(24, 24)
-        pixmap.fill(Qt.GlobalColor.transparent)
-
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-
-        painter.setPen(QPen(QColor("#CBD5E1"), 2))
-        painter.drawLine(7, 5, 7, 17)
-
-        painter.setPen(QPen(QColor("#7F1D1D"), 1))
-        painter.setBrush(QColor("#DC2626"))
-        painter.drawPolygon(QPolygon([QPoint(8, 5), QPoint(19, 5), QPoint(16, 10), QPoint(8, 10)]))
-        painter.drawPolygon(QPolygon([QPoint(8, 10), QPoint(14, 10), QPoint(11, 14), QPoint(8, 14)]))
-
-        painter.setPen(QPen(QColor("#9CA3AF"), 1))
-        painter.setBrush(QColor("#F8FAFC"))
-        painter.drawPolygon(QPolygon([QPoint(6, 17), QPoint(15, 17), QPoint(18, 20), QPoint(4, 20)]))
-        painter.end()
-
-        return QIcon(pixmap)
+        icon_path = os.path.join(get_project_root(), "image", "FNS.png")
+        return QIcon(icon_path)
 
     def set_ui_density(self, dense_mode: bool):
         if self._dense_mode == dense_mode and hasattr(self, "pre_text"):
