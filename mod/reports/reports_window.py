@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtGui import QDesktopServices, QTextOption
 from PyQt6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -94,6 +94,7 @@ class ReportsWindow(QWidget):
         self._attachment_counters: dict[tuple[str, str], int] = {}
         self._base_stylesheet = ""
         self._dense_mode: bool | None = None
+        self._hero_collapsed = False
         self._meta_collapsed = False
         self._session_cache_enabled = False
         self._session_cache_path = self.get_session_cache_path()
@@ -174,14 +175,19 @@ class ReportsWindow(QWidget):
         self.sections_label.setObjectName("summaryLabel")
         self.sections_label.setProperty("summaryBadge", "true")
 
+        self.hero_collapse_btn = QPushButton("Свернуть")
+        self.hero_collapse_btn.setProperty("buttonType", "secondary")
+        self.hero_collapse_btn.setFixedHeight(32)
+        self.hero_collapse_btn.clicked.connect(lambda: self.set_hero_collapsed(True))
+
         for button in (self.add_btn, self.remove_last_btn, self.save_btn, self.open_report_btn):
             button.setMinimumHeight(32)
             actions_layout.addWidget(button)
         self.reset_cache_btn.setMinimumHeight(32)
 
-        hero_panel = QFrame()
-        hero_panel.setObjectName("heroPanel")
-        hero_layout = QHBoxLayout(hero_panel)
+        self.hero_panel = QFrame()
+        self.hero_panel.setObjectName("heroPanel")
+        hero_layout = QHBoxLayout(self.hero_panel)
         hero_layout.setContentsMargins(12, 10, 12, 10)
         hero_layout.setSpacing(10)
 
@@ -202,9 +208,29 @@ class ReportsWindow(QWidget):
         top_panel.addWidget(actions_host, 1)
         top_panel.addWidget(self.sections_label, 0, Qt.AlignmentFlag.AlignTop)
         top_panel.addWidget(self.reset_cache_btn, 0, Qt.AlignmentFlag.AlignTop)
+        top_panel.addWidget(self.hero_collapse_btn, 0, Qt.AlignmentFlag.AlignTop)
         hero_layout.addLayout(top_panel, 1)
-        workflow_layout.addWidget(hero_panel)
-        apply_shadow(hero_panel, blur_radius=26, y_offset=7, alpha=18)
+        workflow_layout.addWidget(self.hero_panel)
+        apply_shadow(self.hero_panel, blur_radius=26, y_offset=7, alpha=18)
+
+        self.hero_collapsed_bar = QFrame()
+        self.hero_collapsed_bar.setObjectName("heroCollapsedBar")
+        self.hero_collapsed_bar.setVisible(False)
+        hero_collapsed_layout = QHBoxLayout(self.hero_collapsed_bar)
+        hero_collapsed_layout.setContentsMargins(10, 6, 10, 6)
+        hero_collapsed_layout.setSpacing(8)
+
+        self.hero_collapsed_title = QLabel("Конструктор отчетов скрыт")
+        self.hero_collapsed_title.setObjectName("heroCollapsedTitle")
+        self.hero_collapsed_title.setWordWrap(True)
+        hero_collapsed_layout.addWidget(self.hero_collapsed_title, 1)
+
+        self.hero_expand_btn = QPushButton("Развернуть")
+        self.hero_expand_btn.setProperty("buttonType", "secondary")
+        self.hero_expand_btn.setFixedHeight(24)
+        self.hero_expand_btn.clicked.connect(lambda: self.set_hero_collapsed(False))
+        hero_collapsed_layout.addWidget(self.hero_expand_btn)
+        workflow_layout.addWidget(self.hero_collapsed_bar)
 
         self.meta_group = QGroupBox("Параметры отчета")
         self.meta_group.setObjectName("metaGroup")
@@ -376,7 +402,8 @@ class ReportsWindow(QWidget):
         self.preview_text = QPlainTextEdit()
         self.preview_text.setObjectName("previewEditor")
         self.preview_text.setReadOnly(True)
-        self.preview_text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        self.preview_text.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+        self.preview_text.setWordWrapMode(QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere)
         self.preview_text.setPlaceholderText("Предпросмотр отчета появится здесь автоматически.")
         preview_layout.addWidget(self.preview_text, 1)
 
@@ -420,6 +447,7 @@ class ReportsWindow(QWidget):
         self.content_splitter.setSizes([910, 390])
 
         apply_shadow(self.meta_group, blur_radius=20, y_offset=6, alpha=14)
+        apply_shadow(self.hero_collapsed_bar, blur_radius=14, y_offset=4, alpha=10)
         apply_shadow(self.meta_collapsed_bar, blur_radius=14, y_offset=4, alpha=10)
         apply_shadow(self.preview_shell, blur_radius=24, y_offset=8, alpha=18)
         apply_shadow(self.progress_shell, blur_radius=18, y_offset=6, alpha=12)
@@ -453,6 +481,13 @@ class ReportsWindow(QWidget):
 
     def _handle_tax_reference_toggle(self, checked: bool):
         self.tax_reference_input.setEnabled(checked)
+        self.refresh_live_state()
+
+    def set_hero_collapsed(self, collapsed: bool):
+        self._hero_collapsed = collapsed
+        self.hero_panel.setVisible(not collapsed)
+        self.hero_collapsed_bar.setVisible(collapsed)
+        self.scroll_area.updateGeometry()
         self.refresh_live_state()
 
     def set_meta_collapsed(self, collapsed: bool):
@@ -618,6 +653,7 @@ class ReportsWindow(QWidget):
         return {
             "version": self.SESSION_CACHE_VERSION,
             "updated_at": datetime.now().isoformat(timespec="seconds"),
+            "hero_collapsed": self._hero_collapsed,
             "meta_collapsed": self._meta_collapsed,
             "metadata": {
                 "build": metadata.build,
@@ -714,6 +750,7 @@ class ReportsWindow(QWidget):
                 section.issue_text.clear()
 
             self.renumber_sections()
+            self.set_hero_collapsed(False)
             self.set_meta_collapsed(False)
         finally:
             self._session_cache_enabled = was_enabled
@@ -789,6 +826,7 @@ class ReportsWindow(QWidget):
                 self._attachment_counters[key] = max(self._attachment_counters.get(key, 0), index)
 
         self._sync_attachment_counters_from_content()
+        self.set_hero_collapsed(bool(cache.get("hero_collapsed", False)))
         self.set_meta_collapsed(bool(cache.get("meta_collapsed", False)))
 
     def _iter_attachment_values(self):
@@ -869,9 +907,13 @@ class ReportsWindow(QWidget):
             f"вложения {sir} / {performer} · следующее {self.preview_attachment_text()}"
         )
 
+    def build_collapsed_hero_summary(self) -> str:
+        return f"Конструктор отчетов скрыт · Разделов: {len(self.sections)}"
+
     def refresh_attachment_hints(self):
         attachment_text = self.preview_attachment_text()
         self.next_attachment_label.setText(attachment_text)
+        self.hero_collapsed_title.setText(self.build_collapsed_hero_summary())
         self.meta_collapsed_title.setText(self.build_collapsed_meta_summary())
         for section in self.sections:
             section.set_attachment_hint(attachment_text)

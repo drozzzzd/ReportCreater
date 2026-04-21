@@ -7,7 +7,8 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtGui import QTextOption
+from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit
 
 import main as app_main
 from mod.reports.report_section_widget import ResizablePlainTextEdit
@@ -55,6 +56,8 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertLessEqual(self.window.width(), 1120)
         self.assertIsNotNone(self.window.preview_shell)
         self.assertIsNotNone(self.window.progress_shell)
+        self.assertIsNotNone(self.window.hero_panel)
+        self.assertFalse(self.window.hero_panel.isHidden())
         self.assertEqual(self.window.build_input.text(), "")
         self.assertEqual(self.window.database_input.text(), "")
         self.assertEqual(self.window.sir_input.text(), "")
@@ -66,6 +69,11 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertTrue(self.window.tax_reference_check.isChecked())
         self.assertTrue(self.window.tax_reference_input.isEnabled())
         self.assertEqual(self.window.completion_bar.value(), 0)
+        self.assertEqual(self.window.preview_text.lineWrapMode(), QPlainTextEdit.LineWrapMode.WidgetWidth)
+        self.assertEqual(
+            self.window.preview_text.wordWrapMode(),
+            QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere,
+        )
 
     def test_section_editors_are_compact_and_resizable(self):
         section = self.window.sections[0]
@@ -322,6 +330,24 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertFalse(self.window.meta_group.isHidden())
         self.assertTrue(self.window.meta_collapsed_bar.isHidden())
 
+    def test_top_constructor_panel_can_be_collapsed(self):
+        self.window.set_hero_collapsed(True)
+        self.app.processEvents()
+
+        self.assertTrue(self.window.hero_panel.isHidden())
+        self.assertFalse(self.window.hero_collapsed_bar.isHidden())
+        self.assertIn("Конструктор отчетов скрыт", self.window.hero_collapsed_title.text())
+        self.assertIn("Разделов: 1", self.window.hero_collapsed_title.text())
+
+        self.window.add_section()
+        self.app.processEvents()
+        self.assertIn("Разделов: 2", self.window.hero_collapsed_title.text())
+
+        self.window.set_hero_collapsed(False)
+        self.app.processEvents()
+        self.assertFalse(self.window.hero_panel.isHidden())
+        self.assertTrue(self.window.hero_collapsed_bar.isHidden())
+
     def test_attachment_preview_labels_show_next_value_without_reserving_counter(self):
         section = self.window.sections[0]
         self.window.sir_input.setText("43533")
@@ -339,6 +365,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.window.doc_input.setText("doc-1")
         self.window.tax_reference_input.setText("tax-reference-1")
         section._insert_attachment(section.issue_text)
+        self.window.set_hero_collapsed(True)
         self.window.set_meta_collapsed(True)
         self.app.processEvents()
 
@@ -356,6 +383,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
             self.assertEqual(restored.tax_reference_input.text(), "tax-reference-1")
             self.assertEqual(restored.sections[0].title_input.text(), "Проверка отчета")
             self.assertIn("attachment:SIR-2026-001_IM_01.jpg", restored.sections[0].issue_text.toPlainText())
+            self.assertTrue(restored.hero_panel.isHidden())
             self.assertTrue(restored.meta_group.isHidden())
             self.assertEqual(restored.build_attachment_text(), "attachment:SIR-2026-001_IM_02.jpg")
         finally:
@@ -371,6 +399,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.window.tax_reference_input.setText("tax-reference-1")
         section.issue_type_combo.setCurrentText("Question")
         section.issue_text.setPlainText("Вопрос в черновике")
+        self.window.set_hero_collapsed(True)
         self.window.add_section()
         self.window.sections[1].title_input.setText("Лишний раздел")
         self.app.processEvents()
@@ -390,6 +419,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertEqual(self.window.sql_input.text(), "")
         self.assertEqual(self.window.doc_input.text(), "")
         self.assertEqual(self.window.tax_reference_input.text(), "")
+        self.assertFalse(self.window.hero_panel.isHidden())
         self.assertTrue(self.window.sql_check.isChecked())
         self.assertTrue(self.window.doc_check.isChecked())
         self.assertTrue(self.window.tax_reference_check.isChecked())

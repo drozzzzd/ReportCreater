@@ -444,7 +444,19 @@ QFrame#metaCollapsedBar {
     border-radius: 12px;
 }
 
+QFrame#heroCollapsedBar {
+    background-color: #FFFFFF;
+    border: 1px solid #D5E0EB;
+    border-radius: 12px;
+}
+
 QLabel#metaCollapsedTitle {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+QLabel#heroCollapsedTitle {
     color: #334155;
     font-size: 12px;
     font-weight: 700;
