@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QTextOption
-from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit
+from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QPushButton
 
 import main as app_main
 from mod.reports.report_section_widget import ResizablePlainTextEdit
@@ -249,6 +249,28 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertEqual(
             section.pre_text.toPlainText().strip(),
             "'Tax User Value' - tabmenu 'Документы' - 'Журнал сформированных справок для налоговых'",
+        )
+
+        full_path = next(iter(section.menu_manager.get_tax_reference_entries()))[1]
+        submenu = section._build_tax_reference_path_menu(
+            section._create_popup_menu(section),
+            section.pre_text,
+            full_path,
+        )
+        actions = submenu.actions()
+        self.assertEqual(len(actions), 1)
+        button = actions[0].defaultWidget()
+        self.assertIsInstance(button, QPushButton)
+        self.assertEqual(button.text(), "Просмотр")
+
+        section.pre_text.clear()
+        button.click()
+        self.app.processEvents()
+
+        self.assertEqual(
+            section.pre_text.toPlainText().strip(),
+            "'Tax User Value' - tabmenu 'Документы' - 'Журнал сформированных справок для налоговых' - "
+            "'по году справки' - 'выбрать год' - 'Просмотр'",
         )
 
     def test_tax_reference_user_help_menu_contains_required_paths(self):

@@ -356,40 +356,12 @@ class ReportSectionWidget(QFrame):
         editor: QPlainTextEdit,
         path: tuple[str, ...],
     ) -> QMenu:
-        return self._build_tax_reference_nested_menu(parent_menu, editor, path[:1], path[1:])
-
-    def _build_tax_reference_nested_menu(
-        self,
-        parent_menu: QMenu,
-        editor: QPlainTextEdit,
-        prefix: tuple[str, ...],
-        remaining: tuple[str, ...],
-    ) -> QMenu:
         menu = self._create_popup_menu(parent_menu)
-        if not remaining:
-            return menu
-
-        current = remaining[0]
-        current_path = prefix + (current,)
-        tail = remaining[1:]
-        if tail:
-            self._add_split_menu_row(
-                menu,
-                current,
-                lambda value=current_path: self._insert_tax_reference_entry(editor, value),
-                lambda child_parent, value=current_path, child_tail=tail: self._build_tax_reference_nested_menu(
-                    child_parent,
-                    editor,
-                    value,
-                    child_tail,
-                ),
-            )
-        else:
-            self._add_leaf_menu_row(
-                menu,
-                current,
-                lambda value=current_path: self._insert_tax_reference_entry(editor, value),
-            )
+        self._add_leaf_menu_row(
+            menu,
+            "Просмотр",
+            lambda value=path: self._insert_tax_reference_entry(editor, value),
+        )
         return menu
 
     def _insert_tax_reference_entry(self, editor: QPlainTextEdit, path: str | tuple[str, ...]):
