@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QTextOption
-from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QPushButton
+from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QPushButton, QTabWidget
 
 import main as app_main
 from mod.reports.report_section_widget import ResizablePlainTextEdit
@@ -58,11 +58,16 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertIsNotNone(self.window.progress_shell)
         self.assertIsNotNone(self.window.hero_panel)
         self.assertFalse(self.window.hero_panel.isHidden())
+        self.assertIsInstance(self.window.main_tabs, QTabWidget)
+        self.assertEqual(self.window.main_tabs.count(), 2)
+        self.assertEqual(self.window.main_tabs.tabText(0), "Конструктор отчетов")
+        self.assertEqual(self.window.main_tabs.tabText(1), "Заполнение ошибок и предпросмотр")
         self.assertIs(self.window.scroll_area.widget(), self.window.workflow_content)
         self.assertIsInstance(self.window.scroll_area, SmoothScrollArea)
         self.assertIs(self.window.hero_panel.parentWidget(), self.window.workflow_content)
         self.assertIs(self.window.meta_group.parentWidget(), self.window.workflow_content)
-        self.assertIs(self.window.sections_host.parentWidget(), self.window.workflow_content)
+        self.assertIs(self.window.sections_scroll_area.widget(), self.window.sections_host)
+        self.assertIs(self.window.sections_panel.parentWidget(), self.window.content_splitter)
         self.assertEqual(self.window.build_input.text(), "")
         self.assertEqual(self.window.database_input.text(), "")
         self.assertEqual(self.window.sir_input.text(), "")

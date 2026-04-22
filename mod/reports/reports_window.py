@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSplitter,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -159,32 +160,51 @@ class ReportsWindow(QWidget):
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(8)
 
-        self.content_splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.content_splitter.setObjectName("mainContentSplitter")
-        self.content_splitter.setChildrenCollapsible(True)
-        self.content_splitter.setHandleWidth(10)
-        root.addWidget(self.content_splitter, 1)
+        self.main_tabs = QTabWidget()
+        self.main_tabs.setObjectName("mainTabs")
+        root.addWidget(self.main_tabs, 1)
 
-        self.workflow_panel = QWidget()
-        self.workflow_panel.setObjectName("workflowPanel")
-        self.workflow_panel.setMinimumWidth(420)
-        workflow_layout = QVBoxLayout(self.workflow_panel)
-        workflow_layout.setContentsMargins(0, 0, 0, 0)
-        workflow_layout.setSpacing(8)
+        self.setup_tab = QWidget()
+        self.setup_tab.setObjectName("setupTab")
+        setup_layout = QVBoxLayout(self.setup_tab)
+        setup_layout.setContentsMargins(0, 0, 0, 0)
+        setup_layout.setSpacing(8)
 
         self.scroll_area = SmoothScrollArea()
-        self.scroll_area.setObjectName("workflowScrollArea")
+        self.scroll_area.setObjectName("setupScrollArea")
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        workflow_layout.addWidget(self.scroll_area, 1)
+        setup_layout.addWidget(self.scroll_area, 1)
 
         self.workflow_content = QWidget()
-        self.workflow_content.setObjectName("workflowScrollContent")
+        self.workflow_content.setObjectName("setupScrollContent")
         self.scroll_area.setWidget(self.workflow_content)
         workflow_content_layout = QVBoxLayout(self.workflow_content)
         workflow_content_layout.setContentsMargins(0, 0, 0, 0)
         workflow_content_layout.setSpacing(8)
+
+        self.main_tabs.addTab(self.setup_tab, "Конструктор отчетов")
+
+        self.fill_tab = QWidget()
+        self.fill_tab.setObjectName("fillTab")
+        fill_layout = QVBoxLayout(self.fill_tab)
+        fill_layout.setContentsMargins(0, 0, 0, 0)
+        fill_layout.setSpacing(8)
+
+        self.content_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.content_splitter.setObjectName("mainContentSplitter")
+        self.content_splitter.setChildrenCollapsible(True)
+        self.content_splitter.setHandleWidth(10)
+        fill_layout.addWidget(self.content_splitter, 1)
+
+        self.sections_panel = QWidget()
+        self.sections_panel.setObjectName("sectionsPanel")
+        self.sections_panel.setMinimumWidth(420)
+        sections_panel_layout = QVBoxLayout(self.sections_panel)
+        sections_panel_layout.setContentsMargins(0, 0, 0, 0)
+        sections_panel_layout.setSpacing(8)
+        self.workflow_panel = self.sections_panel
 
         self.side_panel = QWidget()
         self.side_panel.setObjectName("sidePanel")
@@ -406,7 +426,13 @@ class ReportsWindow(QWidget):
         self.sections_layout.setSpacing(10)
         self.sections_layout.addStretch()
 
-        workflow_content_layout.addWidget(self.sections_host, 1)
+        self.sections_scroll_area = SmoothScrollArea()
+        self.sections_scroll_area.setObjectName("sectionsScrollArea")
+        self.sections_scroll_area.setWidgetResizable(True)
+        self.sections_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.sections_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.sections_scroll_area.setWidget(self.sections_host)
+        sections_panel_layout.addWidget(self.sections_scroll_area, 1)
 
         self.preview_shell = QFrame()
         self.preview_shell.setObjectName("previewShell")
@@ -484,11 +510,12 @@ class ReportsWindow(QWidget):
         progress_shell_layout.addWidget(progress_group)
         side_layout.addWidget(self.progress_shell, 0)
 
-        self.content_splitter.addWidget(self.workflow_panel)
+        self.content_splitter.addWidget(self.sections_panel)
         self.content_splitter.addWidget(self.side_panel)
         self.content_splitter.setStretchFactor(0, 3)
         self.content_splitter.setStretchFactor(1, 2)
         self.content_splitter.setSizes([910, 390])
+        self.main_tabs.addTab(self.fill_tab, "Заполнение ошибок и предпросмотр")
 
         apply_shadow(self.meta_group, blur_radius=20, y_offset=6, alpha=14)
         apply_shadow(self.hero_collapsed_bar, blur_radius=14, y_offset=4, alpha=10)
