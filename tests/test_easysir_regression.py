@@ -38,6 +38,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.window.build_input.setText("5917")
         self.window.database_input.setText("Test")
         self.window.sir_input.setText("SIR-2026-001")
+        section.number_input.setText("1")
         section.title_input.setText("Проверка отчета")
         section.pre_text.setPlainText("Открыть режим")
         section.scenario_text.setPlainText("Выполнить шаг")
@@ -68,6 +69,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertIs(self.window.meta_group.parentWidget(), self.window.workflow_content)
         self.assertIs(self.window.sections_scroll_area.widget(), self.window.sections_host)
         self.assertIs(self.window.sections_panel.parentWidget(), self.window.content_splitter)
+        self.assertEqual(self.window.sections[0].number_input.text(), "")
         self.assertEqual(self.window.build_input.text(), "")
         self.assertEqual(self.window.database_input.text(), "")
         self.assertEqual(self.window.sir_input.text(), "")
@@ -170,6 +172,16 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.app.processEvents()
         self.assertIn("Error: Новый текст ошибки", self.window.preview_text.toPlainText())
 
+    def test_manual_issue_number_controls_report_header(self):
+        section = self.fill_required_fields()
+        section.number_input.setText("42")
+        self.app.processEvents()
+
+        preview = self.window.preview_text.toPlainText()
+        self.assertEqual(self.window.collect_sections()[0].number, "42")
+        self.assertIn("# 42 - Проверка отчета", preview)
+        self.assertNotIn("# 1 - Проверка отчета", preview)
+
     def test_sql_and_doc_are_added_to_preview_and_saved_file(self):
         self.fill_required_fields()
         self.window.sql_input.setText("select 1")
@@ -186,11 +198,13 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
 
         with (
             patch.object(self.window, "confirm_save_with_issues", return_value=True) as confirm_mock,
+            patch.object(self.window, "confirm_issue_numbers", return_value=True) as number_confirm_mock,
             patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No),
         ):
             self.window.save_report()
 
         confirm_mock.assert_not_called()
+        number_confirm_mock.assert_called_once()
         files = sorted(Path(self.temp_dir.name).glob("*.txt"))
         self.assertEqual(len(files), 1)
         self.assertTrue(files[0].name.endswith("-SIR-2026-001.txt"))
@@ -537,10 +551,14 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
 
     def test_continue_editing_stops_save_when_validation_fails(self):
         self.window.sir_input.setText("SIR-2026-001")
-        with patch.object(self.window, "confirm_save_with_issues", return_value=False) as confirm_mock:
+        with (
+            patch.object(self.window, "confirm_save_with_issues", return_value=False) as confirm_mock,
+            patch.object(self.window, "confirm_issue_numbers", return_value=True) as number_confirm_mock,
+        ):
             self.window.save_report()
 
         confirm_mock.assert_called_once()
+        number_confirm_mock.assert_not_called()
         issues = confirm_mock.call_args.args[0]
         self.assertIn("Build", issues)
         self.assertIn("BD", issues)
@@ -548,7 +566,8 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertIn("SQL", issues)
         self.assertIn("DOC", issues)
         self.assertIn("Tax Referens", issues)
-        self.assertIn("Раздел #1: Название", issues)
+        self.assertIn("Раздел 1: Номер ошибки", issues)
+        self.assertIn("Раздел 1: Название", issues)
         self.assertEqual(list(Path(self.temp_dir.name).glob("*.txt")), [])
 
     def test_save_report_requires_sir_before_validation_dialog(self):
@@ -598,6 +617,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertEqual(self.window.doc_input.text(), "doc-1")
         self.assertEqual(self.window.tax_reference_input.text(), "tax-reference-1")
         self.assertEqual(section.title_input.text(), "Loaded title")
+        self.assertEqual(section.number_input.text(), "1")
         self.assertEqual(section.pre_text.toPlainText(), "pre line")
         self.assertEqual(section.scenario_text.toPlainText(), "step line")
         self.assertEqual(section.issue_type_combo.currentText(), "Question")
@@ -607,11 +627,13 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.window.sir_input.setText("SIR-ONLY")
         with (
             patch.object(self.window, "confirm_save_with_issues", return_value=True) as confirm_mock,
+            patch.object(self.window, "confirm_issue_numbers", return_value=True) as number_confirm_mock,
             patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No),
         ):
             self.window.save_report()
 
         confirm_mock.assert_called_once()
+        number_confirm_mock.assert_called_once()
         files = sorted(Path(self.temp_dir.name).glob("*.txt"))
         self.assertEqual(len(files), 1)
         self.assertTrue(files[0].name.endswith("-SIR-ONLY.txt"))
@@ -631,11 +653,13 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.app.processEvents()
         with (
             patch.object(self.window, "confirm_save_with_issues", return_value=True) as confirm_mock,
+            patch.object(self.window, "confirm_issue_numbers", return_value=True) as number_confirm_mock,
             patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No),
         ):
             self.window.save_report()
 
         confirm_mock.assert_not_called()
+        number_confirm_mock.assert_called_once()
         files = sorted(Path(self.temp_dir.name).glob("*.txt"))
         self.assertEqual(len(files), 1)
         self.assertTrue(files[0].name.endswith("-SIR-2026-001.txt"))
@@ -645,6 +669,19 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertIn("DOC - doc-1", content)
         self.assertIn("Tax Referens - tax-reference-1", content)
         self.assertIn("# 1 - Проверка отчета", content)
+
+    def test_save_report_stops_when_issue_number_confirmation_is_rejected(self):
+        self.fill_required_fields()
+        self.window.sql_input.setText("select 1")
+        self.window.doc_input.setText("doc-1")
+        self.window.tax_reference_input.setText("tax-reference-1")
+        self.app.processEvents()
+
+        with patch.object(self.window, "confirm_issue_numbers", return_value=False) as number_confirm_mock:
+            self.window.save_report()
+
+        number_confirm_mock.assert_called_once()
+        self.assertEqual(list(Path(self.temp_dir.name).glob("*.txt")), [])
 
 
 if __name__ == "__main__":

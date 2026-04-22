@@ -23,7 +23,7 @@ class ReportMetadata:
 
 @dataclass(slots=True)
 class ReportSectionData:
-    number: int
+    number: str
     title: str
     precondition: str
     scenario: str
@@ -90,7 +90,8 @@ class TextReportBuilder:
                 continue
 
             title = section.title.strip()
-            lines.append(f"# {section.number} - {title}")
+            number = str(section.number).strip() or "?"
+            lines.append(f"# {number} - {title}")
 
             if section.precondition.strip():
                 lines.append("Pre-Condition:")
@@ -224,7 +225,9 @@ class TextReportParser:
             if header_match:
                 section, index = self._parse_numbered_section(lines, index)
                 sections.append(section)
-                next_number = max(next_number, section.number + 1)
+                section_number = str(section.number).strip()
+                if section_number.isdigit():
+                    next_number = max(next_number, int(section_number) + 1)
                 continue
 
             text_lines: list[str] = []
@@ -234,7 +237,7 @@ class TextReportParser:
             if text_lines:
                 sections.append(
                     ReportSectionData(
-                        number=next_number,
+                        number=str(next_number),
                         title="",
                         precondition="",
                         scenario="",
@@ -246,7 +249,7 @@ class TextReportParser:
 
         return sections or [
             ReportSectionData(
-                number=1,
+                number="1",
                 title="",
                 precondition="",
                 scenario="",
@@ -257,7 +260,7 @@ class TextReportParser:
 
     def _parse_numbered_section(self, lines: list[str], index: int) -> tuple[ReportSectionData, int]:
         header_match = re.match(r"^#\s+(\d+)\s+-\s*(.*)$", lines[index])
-        number = int(header_match.group(1)) if header_match else 1
+        number = header_match.group(1) if header_match else "1"
         title = header_match.group(2).strip() if header_match else ""
         index += 1
 

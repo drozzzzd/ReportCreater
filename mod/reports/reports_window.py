@@ -641,7 +641,7 @@ class ReportsWindow(QWidget):
             if not sections:
                 sections = [
                     ReportSectionData(
-                        number=1,
+                        number="1",
                         title="",
                         precondition="",
                         scenario="",
@@ -651,6 +651,7 @@ class ReportsWindow(QWidget):
                 ]
 
             for section, data in zip(self.sections, sections):
+                section.set_section_number(data.number, overwrite=True)
                 section.title_input.setText(data.title)
                 section.pre_text.setPlainText(data.precondition)
                 section.scenario_text.setPlainText(data.scenario)
@@ -741,6 +742,7 @@ class ReportsWindow(QWidget):
             "output_dir": self.output_dir_input.text().strip(),
             "sections": [
                 {
+                    "number": section.number,
                     "title": section.title,
                     "precondition": section.precondition,
                     "scenario": section.scenario,
@@ -814,6 +816,7 @@ class ReportsWindow(QWidget):
 
             if self.sections:
                 section = self.sections[0]
+                section.number_input.clear()
                 section.title_input.clear()
                 section.pre_text.clear()
                 section.scenario_text.clear()
@@ -873,6 +876,8 @@ class ReportsWindow(QWidget):
             for section, section_cache in zip(self.sections, sections):
                 if not isinstance(section_cache, dict):
                     continue
+                number_value = str(section_cache.get("number", "")).strip()
+                section.set_section_number(number_value or section.section_number, overwrite=True)
                 section.title_input.setText(str(section_cache.get("title", "")))
                 section.pre_text.setPlainText(str(section_cache.get("precondition", "")))
                 section.scenario_text.setPlainText(str(section_cache.get("scenario", "")))
@@ -989,7 +994,7 @@ class ReportsWindow(QWidget):
         for section in self.sections:
             section.set_attachment_hint(attachment_text)
 
-    def _attachment_issues(self, section_number: int, block_name: str, text: str) -> list[str]:
+    def _attachment_issues(self, section_number: str, block_name: str, text: str) -> list[str]:
         issues: list[str] = []
         for line in text.splitlines():
             if "attachment:" not in line.lower():
@@ -1028,28 +1033,34 @@ class ReportsWindow(QWidget):
             if not is_filled:
                 issues.append(label)
 
-        for section, data in zip(self.sections, self.collect_sections()):
+        for index, (section, data) in enumerate(zip(self.sections, self.collect_sections()), start=1):
             text_mode = data.is_plain_text_block()
+            number_value = str(data.number).strip()
+            number_invalid = False if text_mode else not number_value.isdigit()
+            section_label = f"Раздел #{number_value}" if number_value else f"Раздел {index}"
             title_invalid = False if text_mode else not data.title
             precondition_invalid = False if text_mode else not data.precondition
             scenario_invalid = False if text_mode else not data.scenario
             issue_invalid = not data.issue_text
 
             section.set_validation_state(
+                number_invalid=number_invalid,
                 title_invalid=title_invalid,
                 precondition_invalid=precondition_invalid,
                 scenario_invalid=scenario_invalid,
                 issue_invalid=issue_invalid,
             )
 
+            if number_invalid:
+                issues.append(f"{section_label}: Номер ошибки")
             if title_invalid:
-                issues.append(f"Раздел #{data.number}: Название")
+                issues.append(f"{section_label}: Название")
             if precondition_invalid:
-                issues.append(f"Раздел #{data.number}: Предусловия")
+                issues.append(f"{section_label}: Предусловия")
             if scenario_invalid:
-                issues.append(f"Раздел #{data.number}: Сценарий")
+                issues.append(f"{section_label}: Сценарий")
             if issue_invalid:
-                issues.append(f"Раздел #{data.number}: Ошибка / вопрос / текст")
+                issues.append(f"{section_label}: Ошибка / вопрос / текст")
 
             if not text_mode:
                 issues.extend(self._attachment_issues(data.number, "Предусловия", data.precondition))
@@ -1081,6 +1092,7 @@ class ReportsWindow(QWidget):
                 section_checks = [bool(data.issue_text)]
             else:
                 section_checks = [
+                    bool(str(data.number).strip()),
                     bool(data.title),
                     bool(data.precondition),
                     bool(data.scenario),
@@ -1125,6 +1137,34 @@ class ReportsWindow(QWidget):
         dialog = ValidationIssuesDialog(issues, self)
         return dialog.exec() == QDialog.DialogCode.Accepted
 
+    def confirm_issue_numbers(self) -> bool:
+        rows: list[str] = []
+        for index, data in enumerate(self.collect_sections(), start=1):
+            if data.is_empty() or data.is_plain_text_block():
+                continue
+            number = str(data.number).strip() or "не указан"
+            title = data.title.strip() or "без названия"
+            rows.append(f"Раздел {index}: ошибка № {number} - {title}")
+
+        if not rows:
+            return True
+
+        message = (
+            "Проверьте номер ошибки перед сохранением отчета.\n\n"
+            + "\n".join(rows)
+            + "\n\nНомер ошибки указан правильно?"
+        )
+        return (
+            QMessageBox.question(
+                self,
+                "Проверка номера ошибки",
+                message,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            == QMessageBox.StandardButton.Yes
+        )
+
     def save_report(self):
         metadata = self.collect_metadata()
         if not metadata.sir:
@@ -1138,6 +1178,9 @@ class ReportsWindow(QWidget):
 
         issues = self.collect_validation_issues()
         if issues and not self.confirm_save_with_issues(issues):
+            return
+
+        if not self.confirm_issue_numbers():
             return
 
         builder = TextReportBuilder(self.output_dir_input.text().strip() or self.get_output_dir())

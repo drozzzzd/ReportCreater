@@ -180,7 +180,7 @@ QLineEdit#sectionTitleInput {
     padding: 6px 8px;
 }
 
-QLabel#sectionNumber {
+QLineEdit#sectionNumberInput {
     color: #1D4ED8;
     font-size: 14px;
     font-weight: 700;
@@ -191,7 +191,11 @@ QLabel#sectionNumber {
     border: 1px solid #BFDBFE;
     border-radius: 14px;
     padding: 4px 0;
-    qproperty-alignment: AlignCenter;
+}
+
+QLineEdit#sectionNumberInput:focus {
+    border: 2px solid #3B82F6;
+    padding: 3px 0;
 }
 
 QPlainTextEdit {
@@ -686,7 +690,7 @@ ReportsWindow[denseMode="false"] QLineEdit#sectionTitleInput {
     padding: 10px 12px;
 }
 
-ReportsWindow[denseMode="false"] QLabel#sectionNumber {
+ReportsWindow[denseMode="false"] QLineEdit#sectionNumberInput {
     font-size: 16px;
     min-width: 52px;
     max-width: 52px;

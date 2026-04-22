@@ -5,7 +5,7 @@ from collections.abc import Callable
 import os
 
 from PyQt6.QtCore import QPoint, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QIntValidator
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -176,9 +176,14 @@ class ReportSectionWidget(QFrame):
         self.root_layout.setSpacing(8)
 
         self.header_layout = QHBoxLayout()
-        self.number_label = QLabel()
-        self.number_label.setObjectName("sectionNumber")
-        self.header_layout.addWidget(self.number_label)
+        self.number_input = QLineEdit()
+        self.number_input.setObjectName("sectionNumberInput")
+        self.number_input.setValidator(QIntValidator(1, 999999, self))
+        self.number_input.setPlaceholderText("№")
+        self.number_input.setToolTip("Номер ошибки в итоговом отчете")
+        self.number_input.setFixedWidth(62)
+        self.number_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.header_layout.addWidget(self.number_input)
 
         self.title_input = QLineEdit()
         self.title_input.setObjectName("sectionTitleInput")
@@ -196,9 +201,10 @@ class ReportSectionWidget(QFrame):
         self.scenario_text = self._create_editor_group(self.root_layout, "Scenario", with_modes=True)
         self.issue_text = self._create_issue_group(self.root_layout)
 
-        for widget in [self.title_input, self.pre_text, self.scenario_text, self.issue_text]:
+        for widget in [self.number_input, self.title_input, self.pre_text, self.scenario_text, self.issue_text]:
             install_clearable_context_menu(widget)
 
+        self.number_input.textChanged.connect(self.content_changed.emit)
         self.title_input.textChanged.connect(self.content_changed.emit)
         self.pre_text.textChanged.connect(self.content_changed.emit)
         self.scenario_text.textChanged.connect(self.content_changed.emit)
@@ -996,16 +1002,18 @@ class ReportSectionWidget(QFrame):
                 editor.setFocus()
                 return
 
-    def set_section_number(self, number: int):
-        self.section_number = number
-        self.number_label.setText(f"#{number}")
+    def set_section_number(self, number: int | str, *, overwrite: bool = False):
+        self.section_number = str(number)
+        self.number_input.setPlaceholderText(f"№ {number}")
+        if overwrite:
+            self.number_input.setText(str(number))
 
     def set_attachment_hint(self, attachment_text: str):
         self.attachment_hint_label.setText(f"Следующее вложение: {attachment_text}")
 
     def get_section_data(self) -> ReportSectionData:
         return ReportSectionData(
-            number=self.section_number,
+            number=self.number_input.text().strip(),
             title=self.title_input.text().strip(),
             precondition=self.pre_text.toPlainText().strip(),
             scenario=self.scenario_text.toPlainText().strip(),
@@ -1016,11 +1024,13 @@ class ReportSectionWidget(QFrame):
     def set_validation_state(
         self,
         *,
+        number_invalid: bool = False,
         title_invalid: bool,
         precondition_invalid: bool,
         scenario_invalid: bool,
         issue_invalid: bool,
     ):
+        set_invalid_state(self.number_input, number_invalid)
         set_invalid_state(self.title_input, title_invalid)
         set_invalid_state(self.pre_text, precondition_invalid)
         set_invalid_state(self.scenario_text, scenario_invalid)
