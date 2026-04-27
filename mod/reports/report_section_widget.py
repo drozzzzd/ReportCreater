@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
 
 from .flow_layout import FlowLayout
 from .report_menu_catalog import DropdownMenuManager
-from .report_utils import apply_shadow, get_project_root, install_clearable_context_menu, set_invalid_state
+from .report_utils import get_project_root, install_clearable_context_menu, set_invalid_state
 from .text_report_builder import ReportSectionData
 
 
@@ -167,7 +167,6 @@ class ReportSectionWidget(QFrame):
 
         self._build_ui()
         self.set_section_number(section_number)
-        apply_shadow(self, blur_radius=18, y_offset=5, alpha=14)
         self.set_ui_density(True)
 
     def _build_ui(self):

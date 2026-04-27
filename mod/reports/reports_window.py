@@ -34,7 +34,6 @@ from PyQt6.QtWidgets import (
 from .flow_layout import FlowLayout
 from .report_section_widget import ReportSectionWidget
 from .report_utils import (
-    apply_shadow,
     get_project_root,
     install_clearable_context_menu,
     load_mode_icons,
@@ -280,7 +279,6 @@ class ReportsWindow(QWidget):
         top_panel.addWidget(self.hero_collapse_btn, 0, Qt.AlignmentFlag.AlignTop)
         hero_layout.addLayout(top_panel, 1)
         workflow_content_layout.addWidget(self.hero_panel)
-        apply_shadow(self.hero_panel, blur_radius=26, y_offset=7, alpha=18)
 
         self.hero_collapsed_bar = QFrame()
         self.hero_collapsed_bar.setObjectName("heroCollapsedBar")
@@ -452,7 +450,7 @@ class ReportsWindow(QWidget):
         preview_bar_layout.addWidget(preview_title)
         preview_bar_layout.addStretch()
 
-        preview_state = QLabel("LIVE")
+        preview_state = QLabel("обновляется автоматически")
         preview_state.setObjectName("previewWindowState")
         preview_bar_layout.addWidget(preview_state)
 
@@ -517,11 +515,6 @@ class ReportsWindow(QWidget):
         self.content_splitter.setSizes([910, 390])
         self.main_tabs.addTab(self.fill_tab, "Заполнение ошибок и предпросмотр")
 
-        apply_shadow(self.meta_group, blur_radius=20, y_offset=6, alpha=14)
-        apply_shadow(self.hero_collapsed_bar, blur_radius=14, y_offset=4, alpha=10)
-        apply_shadow(self.meta_collapsed_bar, blur_radius=14, y_offset=4, alpha=10)
-        apply_shadow(self.preview_shell, blur_radius=24, y_offset=8, alpha=18)
-        apply_shadow(self.progress_shell, blur_radius=18, y_offset=6, alpha=12)
         self._update_responsive_layout(force=True)
 
     def _connect_live_updates(self):
