@@ -21,10 +21,10 @@ QTabWidget#mainTabs QTabBar::tab {
     border: none;
     border-bottom: 2px solid transparent;
     color: #697386;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
-    min-width: 245px;
-    padding: 20px 22px 18px 22px;
+    min-width: 220px;
+    padding: 14px 18px 12px 18px;
     margin: 0;
 }
 
@@ -53,9 +53,9 @@ QPushButton {
     border: 1px solid #DDE3EC;
     border-radius: 7px;
     color: #273044;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 500;
-    padding: 0 18px;
+    padding: 0 12px;
 }
 
 QPushButton:hover {
@@ -114,9 +114,9 @@ QPushButton[small="true"] {
     color: #697386;
     border-color: #E0E5ED;
     border-radius: 7px;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    padding: 0 13px;
+    padding: 0 10px;
 }
 
 QPushButton[small="true"]:hover {
@@ -126,7 +126,7 @@ QPushButton[small="true"]:hover {
 
 QPushButton#browseBtn {
     padding: 0;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
 }
 
@@ -138,19 +138,19 @@ QFrame#heroPanel {
 
 QLabel#heroTitle {
     color: #283044;
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 700;
 }
 
 QLabel#heroSubtitle {
     color: #8992A3;
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 400;
 }
 
 QLabel#summaryLabel {
     color: #697386;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
 }
 
@@ -178,7 +178,7 @@ QFrame#panelTitleAccent {
 QLabel#panelTitle,
 QLabel#previewWindowTitle {
     color: #283044;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
 }
 
@@ -186,8 +186,8 @@ QLabel#metaSectionLabel {
     color: #697386;
     border: none;
     border-bottom: 1px solid #E1E6EF;
-    padding: 4px 0 8px 0;
-    font-size: 14px;
+    padding: 2px 0 6px 0;
+    font-size: 12px;
     font-weight: 500;
 }
 
@@ -197,13 +197,13 @@ QLabel#attachmentHintLabel {
     background-color: transparent;
     border: none;
     font-family: Consolas, "Cascadia Code", monospace;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
 }
 
 QLabel#previewHintLabel {
     color: #697386;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 400;
 }
 
@@ -212,8 +212,8 @@ QLineEdit {
     border: 1px solid #DDE3EC;
     border-radius: 7px;
     color: #273044;
-    font-size: 15px;
-    padding: 0 14px;
+    font-size: 13px;
+    padding: 0 10px;
     selection-background-color: #D9E7FF;
 }
 
@@ -235,14 +235,14 @@ QLineEdit#sectionNumberInput {
     border-color: #DDE3EC;
     color: #273044;
     font-family: Consolas, "Cascadia Code", monospace;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
     padding: 0;
 }
 
 QLineEdit#sectionTitleInput {
     color: #273044;
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -252,8 +252,8 @@ QPlainTextEdit {
     border-radius: 8px;
     color: #273044;
     font-family: Consolas, "Cascadia Code", monospace;
-    font-size: 14px;
-    padding: 12px;
+    font-size: 12px;
+    padding: 8px;
     selection-background-color: #D9E7FF;
 }
 
@@ -280,9 +280,9 @@ QToolButton#modeButton {
     border: 1px solid #DDE3EC;
     border-radius: 7px;
     color: #273044;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    padding: 0 12px;
+    padding: 0 9px;
 }
 
 QToolButton#modeButton:hover {
@@ -293,7 +293,7 @@ QToolButton#modeButton:hover {
 QToolButton#modeButton::menu-button {
     background-color: transparent;
     border-left: 1px solid #DDE3EC;
-    width: 24px;
+    width: 18px;
     border-top-right-radius: 7px;
     border-bottom-right-radius: 7px;
 }
@@ -311,7 +311,7 @@ QMenu#splitDropdownMenu {
     background-color: #FFFFFF;
     border: 1px solid #DDE3EC;
     border-radius: 8px;
-    padding: 5px 0;
+    padding: 3px 0;
 }
 
 QMenu#splitDropdownMenu::separator {
@@ -331,9 +331,9 @@ QToolButton#menuSplitArrowButton {
     border: none;
     border-radius: 0;
     color: #273044;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    padding: 7px 12px;
+    padding: 5px 10px;
 }
 
 QPushButton#menuItemButton,
@@ -352,7 +352,7 @@ QPushButton#menuSplitMainButton {
 }
 
 QToolButton#menuSplitArrowButton {
-    min-width: 28px;
+    min-width: 24px;
     color: #697386;
     font-size: 12px;
     font-weight: 700;
@@ -363,10 +363,10 @@ QGroupBox {
     border: 1px solid #E1E6EF;
     border-radius: 10px;
     color: #273044;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
-    margin-top: 13px;
-    padding-top: 14px;
+    margin-top: 10px;
+    padding-top: 10px;
 }
 
 QGroupBox::title {
@@ -381,14 +381,14 @@ QGroupBox#sectionIssueGroup {
     background-color: #FFFFFF;
     border: 1px solid #E1E6EF;
     border-radius: 10px;
-    margin-top: 10px;
-    padding-top: 14px;
+    margin-top: 7px;
+    padding-top: 10px;
 }
 
 QGroupBox#sectionEditorGroup::title,
 QGroupBox#sectionIssueGroup::title {
     color: #2E374B;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -401,7 +401,7 @@ QGroupBox#progressPanel {
 
 QGroupBox#progressPanel::title {
     color: #283044;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     left: 0;
     padding: 0;
@@ -416,9 +416,9 @@ QPushButton#issueTypeSegmentButton {
     border: 1px solid #DDE3EC;
     border-radius: 0;
     color: #697386;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    padding: 0 26px;
+    padding: 0 18px;
 }
 
 QPushButton#issueTypeSegmentButton[segmentPosition="first"] {
@@ -445,14 +445,14 @@ QPushButton#issueTypeSegmentButton:checked {
 
 QCheckBox {
     color: #273044;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 500;
-    spacing: 10px;
+    spacing: 8px;
 }
 
 QCheckBox::indicator {
-    width: 19px;
-    height: 19px;
+    width: 16px;
+    height: 16px;
     background-color: #FFFFFF;
     border: 1px solid #D5DCE7;
     border-radius: 4px;
@@ -476,7 +476,7 @@ QFrame#previewWindowBar {
 
 QLabel#previewWindowState {
     color: #8992A3;
-    font-size: 12px;
+    font-size: 11px;
     font-style: italic;
     font-weight: 400;
 }
@@ -491,9 +491,9 @@ QProgressBar {
     border: 1px solid #DDE3EC;
     border-radius: 7px;
     color: #FFFFFF;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    min-height: 28px;
+    min-height: 22px;
     text-align: center;
 }
 
@@ -519,7 +519,7 @@ QScrollBar:vertical {
 QScrollBar::handle:vertical {
     background: #C9D3E1;
     border-radius: 5px;
-    min-height: 34px;
+    min-height: 28px;
 }
 
 QScrollBar::handle:vertical:hover {
@@ -542,22 +542,22 @@ QScrollBar::sub-page:horizontal {
 }
 
 ReportsWindow[denseMode="true"] QPushButton {
-    font-size: 13px;
-    padding: 0 10px;
+    font-size: 12px;
+    padding: 0 8px;
 }
 
 ReportsWindow[denseMode="true"] QLabel#summaryLabel {
-    font-size: 13px;
+    font-size: 12px;
 }
 
 ReportsWindow[denseMode="false"] QPushButton {
-    font-size: 15px;
+    font-size: 13px;
 }
 
 ReportsWindow[denseMode="false"] QPlainTextEdit {
-    font-size: 14px;
+    font-size: 12px;
 }
 
 ReportsWindow[denseMode="false"] QToolButton#modeButton {
-    font-size: 14px;
+    font-size: 12px;
 }

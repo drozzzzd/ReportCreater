@@ -70,8 +70,8 @@ class ReportSectionWidget(QFrame):
 
     def _build_ui(self):
         self.root_layout = QVBoxLayout(self)
-        self.root_layout.setContentsMargins(12, 12, 12, 12)
-        self.root_layout.setSpacing(8)
+        self.root_layout.setContentsMargins(10, 10, 10, 10)
+        self.root_layout.setSpacing(6)
 
         self.header_layout = QHBoxLayout()
         self.number_input = QLineEdit()
@@ -79,7 +79,7 @@ class ReportSectionWidget(QFrame):
         self.number_input.setValidator(QIntValidator(1, 999999, self))
         self.number_input.setPlaceholderText("№")
         self.number_input.setToolTip("Номер ошибки в итоговом отчете")
-        self.number_input.setFixedWidth(62)
+        self.number_input.setFixedWidth(56)
         self.number_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.header_layout.addWidget(self.number_input)
 
@@ -145,8 +145,8 @@ class ReportSectionWidget(QFrame):
         self.issue_type_combo = IssueTypeSegmentedControl()
         self.issue_type_combo.setObjectName("issueTypeCombo")
         self.issue_type_combo.addItems(["Error", "Question", "Текст"])
-        self.issue_type_combo.setFixedWidth(300)
-        self.issue_type_combo.setMinimumHeight(34)
+        self.issue_type_combo.setFixedWidth(258)
+        self.issue_type_combo.setMinimumHeight(28)
         type_row.addWidget(self.issue_type_combo)
         type_row.addStretch()
 
@@ -233,35 +233,35 @@ class ReportSectionWidget(QFrame):
         self.setProperty("denseMode", dense_mode)
 
         if dense_mode:
-            self.root_layout.setContentsMargins(10, 10, 10, 10)
+            self.root_layout.setContentsMargins(8, 8, 8, 8)
+            self.root_layout.setSpacing(5)
+            self.header_layout.setSpacing(6)
+            self.title_input.setMinimumHeight(30)
+            self.remove_btn.setMinimumHeight(30)
+            self.issue_type_combo.setFixedWidth(248)
+            self.pre_text.set_base_height(58)
+            self.scenario_text.set_base_height(58)
+            self.issue_text.set_base_height(58)
+            for button in self.mode_buttons:
+                button.setFixedHeight(28)
+                button.setMinimumWidth(116)
+            for button in self.helper_buttons:
+                button.setMinimumHeight(24)
+        else:
+            self.root_layout.setContentsMargins(12, 12, 12, 12)
             self.root_layout.setSpacing(8)
             self.header_layout.setSpacing(8)
-            self.title_input.setMinimumHeight(40)
-            self.remove_btn.setMinimumHeight(40)
-            self.issue_type_combo.setFixedWidth(290)
-            self.pre_text.set_base_height(82)
-            self.scenario_text.set_base_height(82)
-            self.issue_text.set_base_height(82)
+            self.title_input.setMinimumHeight(34)
+            self.remove_btn.setMinimumHeight(34)
+            self.issue_type_combo.setFixedWidth(268)
+            self.pre_text.set_base_height(70)
+            self.scenario_text.set_base_height(70)
+            self.issue_text.set_base_height(64)
             for button in self.mode_buttons:
-                button.setFixedHeight(40)
-                button.setMinimumWidth(146)
+                button.setFixedHeight(32)
+                button.setMinimumWidth(128)
             for button in self.helper_buttons:
-                button.setMinimumHeight(34)
-        else:
-            self.root_layout.setContentsMargins(18, 18, 18, 18)
-            self.root_layout.setSpacing(14)
-            self.header_layout.setSpacing(10)
-            self.title_input.setMinimumHeight(46)
-            self.remove_btn.setMinimumHeight(46)
-            self.issue_type_combo.setFixedWidth(310)
-            self.pre_text.set_base_height(106)
-            self.scenario_text.set_base_height(106)
-            self.issue_text.set_base_height(92)
-            for button in self.mode_buttons:
-                button.setFixedHeight(42)
-                button.setMinimumWidth(150)
-            for button in self.helper_buttons:
-                button.setMinimumHeight(34)
+                button.setMinimumHeight(28)
 
     # ---- Helper-кнопки и attachment'ы ----
 

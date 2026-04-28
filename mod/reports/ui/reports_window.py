@@ -51,40 +51,40 @@ class HeroIllustration(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("heroIllustration")
-        self.setFixedSize(QSize(148, 118))
+        self.setFixedSize(QSize(104, 82))
 
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        outline = QRectF(24, 6, 78, 78)
+        outline = QRectF(14, 4, 56, 56)
         outline_pen = QPen(QColor("#9DBAF7"), 2)
         outline_pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(outline_pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRoundedRect(outline, 14, 14)
 
-        card = QRectF(38, 34, 82, 70)
+        card = QRectF(26, 22, 58, 50)
         painter.setPen(QPen(QColor("#DDE3EA"), 1))
         painter.setBrush(QBrush(QColor("#FFFFFF")))
         painter.drawRoundedRect(card, 8, 8)
 
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QBrush(QColor("#2F6FEA")))
-        painter.drawRoundedRect(QRectF(52, 48, 58, 7), 3, 3)
+        painter.drawRoundedRect(QRectF(36, 32, 42, 5), 2, 2)
 
         painter.setBrush(QBrush(QColor("#D5DAE1")))
-        painter.drawRoundedRect(QRectF(52, 64, 44, 5), 2, 2)
-        painter.drawRoundedRect(QRectF(52, 76, 56, 5), 2, 2)
-        painter.drawRoundedRect(QRectF(52, 88, 46, 5), 2, 2)
+        painter.drawRoundedRect(QRectF(36, 43, 32, 4), 2, 2)
+        painter.drawRoundedRect(QRectF(36, 52, 40, 4), 2, 2)
+        painter.drawRoundedRect(QRectF(36, 61, 34, 4), 2, 2)
 
         painter.setBrush(QBrush(QColor("#2F6FEA")))
         painter.setPen(QPen(QColor("#2F6FEA"), 1))
-        painter.drawEllipse(QRectF(105, 82, 36, 36))
-        painter.setPen(QPen(QColor("#FFFFFF"), 3))
-        painter.drawLine(114, 100, 132, 100)
-        painter.drawLine(123, 91, 123, 109)
+        painter.drawEllipse(QRectF(74, 54, 26, 26))
+        painter.setPen(QPen(QColor("#FFFFFF"), 2))
+        painter.drawLine(80, 67, 94, 67)
+        painter.drawLine(87, 60, 87, 74)
 
 
 class ReportsWindow(QWidget):
@@ -106,8 +106,8 @@ class ReportsWindow(QWidget):
         self._session_cache_path = self.get_session_cache_path()
 
         self.setWindowTitle("Конструктор отчетов")
-        self.resize(1512, 1130)
-        self.setMinimumSize(980, 660)
+        self.resize(1180, 760)
+        self.setMinimumSize(860, 560)
 
         self._load_styles()
         self._build_ui()
@@ -160,8 +160,8 @@ class ReportsWindow(QWidget):
         self.workflow_content.setObjectName("setupScrollContent")
         self.scroll_area.setWidget(self.workflow_content)
         workflow_content_layout = QVBoxLayout(self.workflow_content)
-        workflow_content_layout.setContentsMargins(30, 22, 30, 28)
-        workflow_content_layout.setSpacing(24)
+        workflow_content_layout.setContentsMargins(20, 16, 20, 20)
+        workflow_content_layout.setSpacing(14)
 
         self.main_tabs.addTab(self.setup_tab, "Конструктор отчетов")
 
@@ -205,16 +205,16 @@ class ReportsWindow(QWidget):
         self.sections_label.setProperty("summaryBadge", "true")
 
         for button in (self.add_btn, self.remove_last_btn, self.save_btn, self.open_report_btn):
-            button.setMinimumHeight(46)
-            button.setIconSize(QSize(18, 18))
-        self.reset_cache_btn.setMinimumHeight(46)
-        self.reset_cache_btn.setIconSize(QSize(18, 18))
-        self.add_btn.setFixedWidth(136)
-        self.remove_last_btn.setFixedWidth(146)
-        self.save_btn.setFixedWidth(220)
-        self.open_report_btn.setFixedWidth(190)
-        self.reset_cache_btn.setFixedWidth(206)
-        self.sections_label.setFixedWidth(112)
+            button.setMinimumHeight(34)
+            button.setIconSize(QSize(15, 15))
+        self.reset_cache_btn.setMinimumHeight(34)
+        self.reset_cache_btn.setIconSize(QSize(15, 15))
+        self.add_btn.setFixedWidth(112)
+        self.remove_last_btn.setFixedWidth(120)
+        self.save_btn.setFixedWidth(178)
+        self.open_report_btn.setFixedWidth(154)
+        self.reset_cache_btn.setFixedWidth(170)
+        self.sections_label.setFixedWidth(88)
 
         toolbar_layout.addWidget(self.add_btn)
         toolbar_layout.addWidget(self.remove_last_btn)
@@ -230,10 +230,10 @@ class ReportsWindow(QWidget):
         # Hero-панель
         self.hero_panel = QFrame()
         self.hero_panel.setObjectName("heroPanel")
-        self.hero_panel.setMinimumHeight(280)
+        self.hero_panel.setMinimumHeight(170)
         hero_layout = QVBoxLayout(self.hero_panel)
-        hero_layout.setContentsMargins(20, 28, 20, 28)
-        hero_layout.setSpacing(12)
+        hero_layout.setContentsMargins(16, 16, 16, 16)
+        hero_layout.setSpacing(6)
 
         hero_layout.addStretch(1)
         hero_layout.addWidget(HeroIllustration(), 0, Qt.AlignmentFlag.AlignHCenter)
@@ -258,16 +258,16 @@ class ReportsWindow(QWidget):
         self.meta_group = QFrame()
         self.meta_group.setObjectName("metaGroup")
         outer_layout = QVBoxLayout(self.meta_group)
-        outer_layout.setContentsMargins(20, 18, 20, 20)
-        outer_layout.setSpacing(14)
+        outer_layout.setContentsMargins(16, 14, 16, 16)
+        outer_layout.setSpacing(10)
 
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(12)
+        header_layout.setSpacing(10)
 
         accent = QFrame()
         accent.setObjectName("panelTitleAccent")
-        accent.setFixedSize(4, 26)
+        accent.setFixedSize(4, 22)
         header_layout.addWidget(accent)
 
         title = QLabel("Параметры отчета")
@@ -307,11 +307,11 @@ class ReportsWindow(QWidget):
         self.output_dir_input = QLineEdit()
         self.output_dir_input.setReadOnly(True)
         self.output_dir_input.setText(self.get_output_dir())
-        self.output_dir_input.setFixedHeight(36)
+        self.output_dir_input.setFixedHeight(28)
         browse_btn = QPushButton("...")
         browse_btn.setObjectName("browseBtn")
         browse_btn.setFixedWidth(34)
-        browse_btn.setFixedHeight(36)
+        browse_btn.setFixedHeight(28)
         browse_btn.clicked.connect(self.select_output_dir)
         path_row.addWidget(self.output_dir_input)
         path_row.addWidget(browse_btn)
@@ -353,20 +353,20 @@ class ReportsWindow(QWidget):
     def _make_meta_input(placeholder: str) -> QLineEdit:
         widget = QLineEdit()
         widget.setPlaceholderText(placeholder)
-        widget.setFixedHeight(36)
+        widget.setFixedHeight(28)
         return widget
 
     def _build_fill_tab(self):
         self.fill_tab = QWidget()
         self.fill_tab.setObjectName("fillTab")
         fill_layout = QVBoxLayout(self.fill_tab)
-        fill_layout.setContentsMargins(20, 22, 24, 28)
-        fill_layout.setSpacing(20)
+        fill_layout.setContentsMargins(14, 14, 16, 18)
+        fill_layout.setSpacing(12)
 
         self.content_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.content_splitter.setObjectName("mainContentSplitter")
         self.content_splitter.setChildrenCollapsible(False)
-        self.content_splitter.setHandleWidth(20)
+        self.content_splitter.setHandleWidth(12)
         fill_layout.addWidget(self.content_splitter, 1)
 
         self.sections_panel = QWidget()
@@ -374,7 +374,7 @@ class ReportsWindow(QWidget):
         self.sections_panel.setMinimumWidth(420)
         sections_panel_layout = QVBoxLayout(self.sections_panel)
         sections_panel_layout.setContentsMargins(0, 0, 0, 0)
-        sections_panel_layout.setSpacing(8)
+        sections_panel_layout.setSpacing(6)
         self.workflow_panel = self.sections_panel
 
         self.side_panel = QWidget()
@@ -399,7 +399,7 @@ class ReportsWindow(QWidget):
         self.sections_host = QWidget()
         self.sections_layout = QVBoxLayout(self.sections_host)
         self.sections_layout.setContentsMargins(0, 0, 0, 0)
-        self.sections_layout.setSpacing(10)
+        self.sections_layout.setSpacing(8)
         self.sections_layout.addStretch()
 
         self.sections_scroll_area = SmoothScrollArea()
@@ -415,13 +415,13 @@ class ReportsWindow(QWidget):
         self.preview_shell.setObjectName("previewShell")
         self.preview_shell.setMinimumWidth(320)
         preview_shell_layout = QVBoxLayout(self.preview_shell)
-        preview_shell_layout.setContentsMargins(12, 12, 12, 12)
-        preview_shell_layout.setSpacing(10)
+        preview_shell_layout.setContentsMargins(10, 10, 10, 10)
+        preview_shell_layout.setSpacing(8)
 
         preview_bar = QFrame()
         preview_bar.setObjectName("previewWindowBar")
         preview_bar_layout = QHBoxLayout(preview_bar)
-        preview_bar_layout.setContentsMargins(12, 10, 12, 10)
+        preview_bar_layout.setContentsMargins(10, 8, 10, 8)
         preview_bar_layout.setSpacing(8)
 
         preview_title = QLabel("Предпросмотр отчета")
@@ -438,8 +438,8 @@ class ReportsWindow(QWidget):
         self.preview_panel = QFrame()
         self.preview_panel.setObjectName("previewPanel")
         preview_layout = QVBoxLayout(self.preview_panel)
-        preview_layout.setContentsMargins(14, 14, 14, 14)
-        preview_layout.setSpacing(8)
+        preview_layout.setContentsMargins(10, 10, 10, 10)
+        preview_layout.setSpacing(6)
 
         preview_hint = QLabel("Здесь в реальном времени отображается весь текст отчета, который будет сохранен в TXT.")
         preview_hint.setWordWrap(True)
@@ -461,7 +461,7 @@ class ReportsWindow(QWidget):
         progress_group = QGroupBox("Заполненность отчета")
         progress_group.setObjectName("progressPanel")
         progress_layout = QVBoxLayout(progress_group)
-        progress_layout.setContentsMargins(12, 10, 12, 10)
+        progress_layout.setContentsMargins(10, 8, 10, 8)
         progress_layout.setSpacing(6)
 
         self.completion_label = QLabel("Заполненность: 0%")
@@ -481,10 +481,10 @@ class ReportsWindow(QWidget):
 
         self.progress_shell = QFrame()
         self.progress_shell.setObjectName("progressShell")
-        self.progress_shell.setMinimumHeight(126)
+        self.progress_shell.setMinimumHeight(104)
         progress_shell_layout = QVBoxLayout(self.progress_shell)
-        progress_shell_layout.setContentsMargins(10, 10, 10, 10)
-        progress_shell_layout.setSpacing(8)
+        progress_shell_layout.setContentsMargins(8, 8, 8, 8)
+        progress_shell_layout.setSpacing(6)
         progress_shell_layout.addWidget(progress_group)
         parent_layout.addWidget(self.progress_shell, 0)
 
@@ -1164,8 +1164,19 @@ class ReportsWindow(QWidget):
         if hasattr(self, "toolbar_layout"):
             if dense_mode:
                 toolbar_widths = {
-                    self.add_btn: 110,
-                    self.remove_last_btn: 118,
+                    self.add_btn: 104,
+                    self.remove_last_btn: 112,
+                    self.save_btn: 164,
+                    self.open_report_btn: 144,
+                    self.reset_cache_btn: 158,
+                }
+                self.sections_label.setFixedWidth(84)
+                self.toolbar_layout.setSpacing(6)
+                self.toolbar_gap.changeSize(8, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+            else:
+                toolbar_widths = {
+                    self.add_btn: 112,
+                    self.remove_last_btn: 120,
                     self.save_btn: 178,
                     self.open_report_btn: 154,
                     self.reset_cache_btn: 170,
@@ -1173,17 +1184,6 @@ class ReportsWindow(QWidget):
                 self.sections_label.setFixedWidth(88)
                 self.toolbar_layout.setSpacing(8)
                 self.toolbar_gap.changeSize(12, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
-            else:
-                toolbar_widths = {
-                    self.add_btn: 136,
-                    self.remove_last_btn: 146,
-                    self.save_btn: 220,
-                    self.open_report_btn: 190,
-                    self.reset_cache_btn: 206,
-                }
-                self.sections_label.setFixedWidth(112)
-                self.toolbar_layout.setSpacing(14)
-                self.toolbar_gap.changeSize(28, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
 
             for button, width in toolbar_widths.items():
                 button.setFixedWidth(width)
