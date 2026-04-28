@@ -401,7 +401,7 @@ class ReportsWindow(QWidget):
         self.sections_layout = QVBoxLayout(self.sections_host)
         self.sections_layout.setContentsMargins(0, 0, 0, 0)
         self.sections_layout.setSpacing(8)
-        self.sections_layout.addStretch()
+        self.sections_layout.addStretch(0)
 
         self.sections_scroll_area = SmoothScrollArea()
         self.sections_scroll_area.setObjectName("sectionsScrollArea")
@@ -637,7 +637,7 @@ class ReportsWindow(QWidget):
         section.remove_requested.connect(self.remove_section)
         section.content_changed.connect(self.refresh_live_state)
         self.sections.append(section)
-        self.sections_layout.insertWidget(self.sections_layout.count() - 1, section)
+        self.sections_layout.insertWidget(self.sections_layout.count() - 1, section, 1)
         if self._dense_mode is not None:
             section.set_ui_density(self._dense_mode)
         self.renumber_sections()

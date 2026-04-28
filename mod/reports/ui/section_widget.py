@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
+    QSizePolicy,
     QToolButton,
     QVBoxLayout,
 )
@@ -61,6 +62,7 @@ class ReportSectionWidget(QFrame):
 
         self.setObjectName("reportSectionCard")
         self.setFrameShape(QFrame.Shape.StyledPanel)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
 
         self._build_ui()
         self.set_section_number(section_number)
