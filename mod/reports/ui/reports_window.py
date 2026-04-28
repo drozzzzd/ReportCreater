@@ -397,6 +397,7 @@ class ReportsWindow(QWidget):
 
     def _build_sections_scroll(self, parent_layout: QVBoxLayout):
         self.sections_host = QWidget()
+        self.sections_host.setObjectName("sectionsHost")
         self.sections_layout = QVBoxLayout(self.sections_host)
         self.sections_layout.setContentsMargins(0, 0, 0, 0)
         self.sections_layout.setSpacing(8)

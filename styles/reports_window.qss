@@ -5,7 +5,9 @@ ReportsWindow {
 
 QWidget#setupTab,
 QWidget#fillTab,
-QWidget#setupScrollContent {
+QWidget#setupScrollContent,
+QWidget#sectionsPanel,
+QWidget#sectionsHost {
     background-color: #FBFCFF;
 }
 
@@ -41,6 +43,12 @@ QTabWidget#mainTabs QTabBar::tab:selected {
 QScrollArea {
     background: transparent;
     border: none;
+}
+
+QScrollArea#sectionsScrollArea,
+QScrollArea#sectionsScrollArea > QWidget,
+QScrollArea#sectionsScrollArea > QWidget > QWidget {
+    background-color: #FBFCFF;
 }
 
 QFrame#constructorToolbar {
