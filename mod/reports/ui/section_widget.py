@@ -142,12 +142,11 @@ class ReportSectionWidget(QFrame):
 
         type_row = QHBoxLayout()
         type_row.setSpacing(8)
-        type_row.addWidget(QLabel("Тип:"))
         self.issue_type_combo = IssueTypeSegmentedControl()
         self.issue_type_combo.setObjectName("issueTypeCombo")
         self.issue_type_combo.addItems(["Error", "Question", "Текст"])
-        self.issue_type_combo.setFixedWidth(230)
-        self.issue_type_combo.setMinimumHeight(30)
+        self.issue_type_combo.setFixedWidth(300)
+        self.issue_type_combo.setMinimumHeight(34)
         type_row.addWidget(self.issue_type_combo)
         type_row.addStretch()
 
@@ -235,34 +234,34 @@ class ReportSectionWidget(QFrame):
 
         if dense_mode:
             self.root_layout.setContentsMargins(10, 10, 10, 10)
-            self.root_layout.setSpacing(4)
+            self.root_layout.setSpacing(8)
             self.header_layout.setSpacing(8)
-            self.title_input.setMinimumHeight(30)
-            self.remove_btn.setMinimumHeight(30)
-            self.issue_type_combo.setFixedWidth(228)
-            self.pre_text.set_base_height(58)
-            self.scenario_text.set_base_height(58)
-            self.issue_text.set_base_height(58)
+            self.title_input.setMinimumHeight(40)
+            self.remove_btn.setMinimumHeight(40)
+            self.issue_type_combo.setFixedWidth(290)
+            self.pre_text.set_base_height(82)
+            self.scenario_text.set_base_height(82)
+            self.issue_text.set_base_height(82)
             for button in self.mode_buttons:
-                button.setFixedHeight(28)
-                button.setMinimumWidth(116)
+                button.setFixedHeight(40)
+                button.setMinimumWidth(146)
             for button in self.helper_buttons:
-                button.setMinimumHeight(22)
+                button.setMinimumHeight(34)
         else:
-            self.root_layout.setContentsMargins(14, 14, 14, 14)
-            self.root_layout.setSpacing(10)
+            self.root_layout.setContentsMargins(18, 18, 18, 18)
+            self.root_layout.setSpacing(14)
             self.header_layout.setSpacing(10)
-            self.title_input.setMinimumHeight(38)
-            self.remove_btn.setMinimumHeight(36)
-            self.issue_type_combo.setFixedWidth(250)
-            self.pre_text.set_base_height(92)
-            self.scenario_text.set_base_height(92)
+            self.title_input.setMinimumHeight(46)
+            self.remove_btn.setMinimumHeight(46)
+            self.issue_type_combo.setFixedWidth(310)
+            self.pre_text.set_base_height(106)
+            self.scenario_text.set_base_height(106)
             self.issue_text.set_base_height(92)
             for button in self.mode_buttons:
-                button.setFixedHeight(38)
-                button.setMinimumWidth(156)
+                button.setFixedHeight(42)
+                button.setMinimumWidth(150)
             for button in self.helper_buttons:
-                button.setMinimumHeight(32)
+                button.setMinimumHeight(34)
 
     # ---- Helper-кнопки и attachment'ы ----
 

@@ -5,8 +5,8 @@ import json
 import os
 from datetime import datetime
 
-from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QDesktopServices, QTextOption
+from PyQt6.QtCore import QRectF, QSize, Qt, QUrl
+from PyQt6.QtGui import QBrush, QColor, QDesktopServices, QPainter, QPen, QTextOption
 from PyQt6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -21,8 +21,10 @@ from PyQt6.QtWidgets import (
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
-    QScrollArea,
+    QSizePolicy,
     QSplitter,
+    QSpacerItem,
+    QStyle,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -41,9 +43,48 @@ from ..dialogs.validation_issues import ValidationIssuesDialog
 from ..utils.icons import load_mode_icons
 from ..utils.paths import get_project_root
 from ..utils.widget_helpers import install_clearable_context_menu, set_invalid_state
-from ..widgets.flow_layout import FlowLayout
 from ..widgets.smooth_scroll_area import SmoothScrollArea
 from .section_widget import ReportSectionWidget
+
+
+class HeroIllustration(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("heroIllustration")
+        self.setFixedSize(QSize(148, 118))
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        outline = QRectF(24, 6, 78, 78)
+        outline_pen = QPen(QColor("#9DBAF7"), 2)
+        outline_pen.setStyle(Qt.PenStyle.DashLine)
+        painter.setPen(outline_pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(outline, 14, 14)
+
+        card = QRectF(38, 34, 82, 70)
+        painter.setPen(QPen(QColor("#DDE3EA"), 1))
+        painter.setBrush(QBrush(QColor("#FFFFFF")))
+        painter.drawRoundedRect(card, 8, 8)
+
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(QColor("#2F6FEA")))
+        painter.drawRoundedRect(QRectF(52, 48, 58, 7), 3, 3)
+
+        painter.setBrush(QBrush(QColor("#D5DAE1")))
+        painter.drawRoundedRect(QRectF(52, 64, 44, 5), 2, 2)
+        painter.drawRoundedRect(QRectF(52, 76, 56, 5), 2, 2)
+        painter.drawRoundedRect(QRectF(52, 88, 46, 5), 2, 2)
+
+        painter.setBrush(QBrush(QColor("#2F6FEA")))
+        painter.setPen(QPen(QColor("#2F6FEA"), 1))
+        painter.drawEllipse(QRectF(105, 82, 36, 36))
+        painter.setPen(QPen(QColor("#FFFFFF"), 3))
+        painter.drawLine(114, 100, 132, 100)
+        painter.drawLine(123, 91, 123, 109)
 
 
 class ReportsWindow(QWidget):
@@ -65,8 +106,8 @@ class ReportsWindow(QWidget):
         self._session_cache_path = self.get_session_cache_path()
 
         self.setWindowTitle("Конструктор отчетов")
-        self.resize(1120, 760)
-        self.setMinimumSize(780, 560)
+        self.resize(1512, 1130)
+        self.setMinimumSize(980, 660)
 
         self._load_styles()
         self._build_ui()
@@ -90,8 +131,8 @@ class ReportsWindow(QWidget):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(10, 10, 10, 10)
-        root.setSpacing(8)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
         self.main_tabs = QTabWidget()
         self.main_tabs.setObjectName("mainTabs")
@@ -119,8 +160,8 @@ class ReportsWindow(QWidget):
         self.workflow_content.setObjectName("setupScrollContent")
         self.scroll_area.setWidget(self.workflow_content)
         workflow_content_layout = QVBoxLayout(self.workflow_content)
-        workflow_content_layout.setContentsMargins(0, 0, 0, 0)
-        workflow_content_layout.setSpacing(8)
+        workflow_content_layout.setContentsMargins(30, 22, 30, 28)
+        workflow_content_layout.setSpacing(24)
 
         self.main_tabs.addTab(self.setup_tab, "Конструктор отчетов")
 
@@ -128,13 +169,16 @@ class ReportsWindow(QWidget):
         self._build_meta_group(workflow_content_layout)
 
     def _build_hero_panel(self, parent_layout: QVBoxLayout):
-        # Action-кнопки
-        actions_host = QWidget()
-        actions_host.setObjectName("topActionsHost")
-        actions_layout = FlowLayout(actions_host, spacing=6)
+        toolbar = QFrame()
+        toolbar.setObjectName("constructorToolbar")
+        toolbar_layout = QHBoxLayout(toolbar)
+        self.toolbar_layout = toolbar_layout
+        toolbar_layout.setContentsMargins(0, 0, 0, 0)
+        toolbar_layout.setSpacing(14)
 
-        self.add_btn = QPushButton("+ Раздел")
+        self.add_btn = QPushButton("+  Раздел")
         self.add_btn.setObjectName("primaryBtn")
+        self.add_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder))
         self.add_btn.clicked.connect(self.add_section)
 
         self.remove_last_btn = QPushButton("- Последний")
@@ -143,101 +187,102 @@ class ReportsWindow(QWidget):
 
         self.save_btn = QPushButton("Сохранить отчет")
         self.save_btn.setObjectName("saveBtn")
+        self.save_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         self.save_btn.clicked.connect(self.save_report)
 
         self.open_report_btn = QPushButton("Открыть отчет")
         self.open_report_btn.setProperty("buttonType", "secondary")
+        self.open_report_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
         self.open_report_btn.clicked.connect(self.select_report_file)
 
         self.reset_cache_btn = QPushButton("Сброс черновика")
         self.reset_cache_btn.setObjectName("resetCacheBtn")
+        self.reset_cache_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
         self.reset_cache_btn.clicked.connect(lambda: self.reset_autosave_draft())
 
         self.sections_label = QLabel("Разделов: 0")
         self.sections_label.setObjectName("summaryLabel")
         self.sections_label.setProperty("summaryBadge", "true")
 
-        self.hero_collapse_btn = QPushButton("Свернуть")
-        self.hero_collapse_btn.setProperty("buttonType", "secondary")
-        self.hero_collapse_btn.setFixedHeight(32)
-        self.hero_collapse_btn.clicked.connect(lambda: self.set_hero_collapsed(True))
-
         for button in (self.add_btn, self.remove_last_btn, self.save_btn, self.open_report_btn):
-            button.setMinimumHeight(32)
-            actions_layout.addWidget(button)
-        self.reset_cache_btn.setMinimumHeight(32)
+            button.setMinimumHeight(46)
+            button.setIconSize(QSize(18, 18))
+        self.reset_cache_btn.setMinimumHeight(46)
+        self.reset_cache_btn.setIconSize(QSize(18, 18))
+        self.add_btn.setFixedWidth(136)
+        self.remove_last_btn.setFixedWidth(146)
+        self.save_btn.setFixedWidth(220)
+        self.open_report_btn.setFixedWidth(190)
+        self.reset_cache_btn.setFixedWidth(206)
+        self.sections_label.setFixedWidth(112)
 
-        # Hero-панель: текст + actions row
+        toolbar_layout.addWidget(self.add_btn)
+        toolbar_layout.addWidget(self.remove_last_btn)
+        toolbar_layout.addStretch(1)
+        toolbar_layout.addWidget(self.save_btn)
+        toolbar_layout.addWidget(self.open_report_btn)
+        self.toolbar_gap = QSpacerItem(28, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        toolbar_layout.addItem(self.toolbar_gap)
+        toolbar_layout.addWidget(self.sections_label)
+        toolbar_layout.addWidget(self.reset_cache_btn)
+        parent_layout.addWidget(toolbar)
+
+        # Hero-панель
         self.hero_panel = QFrame()
         self.hero_panel.setObjectName("heroPanel")
-        hero_layout = QHBoxLayout(self.hero_panel)
-        hero_layout.setContentsMargins(12, 10, 12, 10)
-        hero_layout.setSpacing(10)
+        self.hero_panel.setMinimumHeight(280)
+        hero_layout = QVBoxLayout(self.hero_panel)
+        hero_layout.setContentsMargins(20, 28, 20, 28)
+        hero_layout.setSpacing(12)
 
-        hero_copy = QVBoxLayout()
-        hero_copy.setSpacing(2)
-        hero_copy.setContentsMargins(0, 0, 0, 0)
+        hero_layout.addStretch(1)
+        hero_layout.addWidget(HeroIllustration(), 0, Qt.AlignmentFlag.AlignHCenter)
 
         hero_title = QLabel("Конструктор отчетов")
         hero_title.setObjectName("heroTitle")
-        hero_copy.addWidget(hero_title)
+        hero_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hero_layout.addWidget(hero_title)
 
         hero_subtitle = QLabel(
             "Собирайте шаги, проверяйте результат вживую и сохраняйте готовый TXT без лишней ручной правки."
         )
         hero_subtitle.setObjectName("heroSubtitle")
         hero_subtitle.setWordWrap(True)
-        hero_copy.addWidget(hero_subtitle)
-
-        top_panel = QHBoxLayout()
-        top_panel.setSpacing(10)
-        top_panel.addWidget(actions_host, 1)
-        top_panel.addWidget(self.sections_label, 0, Qt.AlignmentFlag.AlignTop)
-        top_panel.addWidget(self.reset_cache_btn, 0, Qt.AlignmentFlag.AlignTop)
-        top_panel.addWidget(self.hero_collapse_btn, 0, Qt.AlignmentFlag.AlignTop)
-
-        hero_layout.addLayout(hero_copy, 1)
-        hero_layout.addLayout(top_panel, 1)
+        hero_subtitle.setMaximumWidth(620)
+        hero_subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hero_layout.addWidget(hero_subtitle)
+        hero_layout.addStretch(1)
         parent_layout.addWidget(self.hero_panel)
 
-        # Свёрнутая полоса
-        self.hero_collapsed_bar = QFrame()
-        self.hero_collapsed_bar.setObjectName("heroCollapsedBar")
-        self.hero_collapsed_bar.setVisible(False)
-        hero_collapsed_layout = QHBoxLayout(self.hero_collapsed_bar)
-        hero_collapsed_layout.setContentsMargins(10, 6, 10, 6)
-        hero_collapsed_layout.setSpacing(8)
-
-        self.hero_collapsed_title = QLabel("Конструктор отчетов скрыт")
-        self.hero_collapsed_title.setObjectName("heroCollapsedTitle")
-        self.hero_collapsed_title.setWordWrap(True)
-        hero_collapsed_layout.addWidget(self.hero_collapsed_title, 1)
-
-        self.hero_expand_btn = QPushButton("Развернуть")
-        self.hero_expand_btn.setProperty("buttonType", "secondary")
-        self.hero_expand_btn.setFixedHeight(24)
-        self.hero_expand_btn.clicked.connect(lambda: self.set_hero_collapsed(False))
-        hero_collapsed_layout.addWidget(self.hero_expand_btn)
-        parent_layout.addWidget(self.hero_collapsed_bar)
-
     def _build_meta_group(self, parent_layout: QVBoxLayout):
-        self.meta_group = QGroupBox("Параметры отчета")
+        self.meta_group = QFrame()
         self.meta_group.setObjectName("metaGroup")
-        meta_layout = QFormLayout(self.meta_group)
+        outer_layout = QVBoxLayout(self.meta_group)
+        outer_layout.setContentsMargins(20, 18, 20, 20)
+        outer_layout.setSpacing(14)
+
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(12)
+
+        accent = QFrame()
+        accent.setObjectName("panelTitleAccent")
+        accent.setFixedSize(4, 26)
+        header_layout.addWidget(accent)
+
+        title = QLabel("Параметры отчета")
+        title.setObjectName("panelTitle")
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+        outer_layout.addLayout(header_layout)
+
+        meta_layout = QFormLayout()
         meta_layout.setSpacing(4)
         meta_layout.setHorizontalSpacing(8)
-        meta_layout.setVerticalSpacing(4)
+        meta_layout.setVerticalSpacing(8)
         meta_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        meta_layout.setContentsMargins(10, 8, 10, 8)
-
-        meta_actions = QHBoxLayout()
-        meta_actions.setContentsMargins(0, 0, 0, 0)
-        meta_actions.addStretch()
-        self.meta_collapse_btn = QPushButton("Свернуть")
-        self.meta_collapse_btn.setProperty("buttonType", "secondary")
-        self.meta_collapse_btn.setFixedHeight(24)
-        self.meta_collapse_btn.clicked.connect(lambda: self.set_meta_collapsed(True))
-        meta_actions.addWidget(self.meta_collapse_btn)
+        meta_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.addLayout(meta_layout)
 
         # Поля
         self.build_input = self._make_meta_input("Введите build")
@@ -262,10 +307,11 @@ class ReportsWindow(QWidget):
         self.output_dir_input = QLineEdit()
         self.output_dir_input.setReadOnly(True)
         self.output_dir_input.setText(self.get_output_dir())
-        self.output_dir_input.setFixedHeight(24)
+        self.output_dir_input.setFixedHeight(36)
         browse_btn = QPushButton("...")
+        browse_btn.setObjectName("browseBtn")
         browse_btn.setFixedWidth(34)
-        browse_btn.setFixedHeight(24)
+        browse_btn.setFixedHeight(36)
         browse_btn.clicked.connect(self.select_output_dir)
         path_row.addWidget(self.output_dir_input)
         path_row.addWidget(browse_btn)
@@ -278,7 +324,6 @@ class ReportsWindow(QWidget):
         self.next_attachment_label.setObjectName("attachmentPreviewLabel")
         self.next_attachment_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
-        meta_layout.addRow(meta_actions)
         meta_layout.addRow(report_fields_label)
         meta_layout.addRow("Build:", self.build_input)
         meta_layout.addRow("BD:", self.database_input)
@@ -291,28 +336,6 @@ class ReportsWindow(QWidget):
         meta_layout.addRow("Исполнитель:", self.performer_input)
         meta_layout.addRow("Следующее вложение:", self.next_attachment_label)
         parent_layout.addWidget(self.meta_group)
-
-        # Свёрнутая полоса meta
-        self.meta_collapsed_bar = QFrame()
-        self.meta_collapsed_bar.setObjectName("metaCollapsedBar")
-        self.meta_collapsed_bar.setVisible(False)
-        collapsed_layout = QHBoxLayout(self.meta_collapsed_bar)
-        collapsed_layout.setContentsMargins(10, 6, 10, 6)
-        collapsed_layout.setSpacing(8)
-
-        self.meta_collapsed_title = QLabel("Параметры отчета скрыты")
-        self.meta_collapsed_title.setObjectName("metaCollapsedTitle")
-        self.meta_collapsed_title.setWordWrap(True)
-        self.meta_collapsed_title.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        collapsed_layout.addWidget(self.meta_collapsed_title, 1)
-        collapsed_layout.addStretch()
-
-        self.meta_expand_btn = QPushButton("Развернуть")
-        self.meta_expand_btn.setProperty("buttonType", "secondary")
-        self.meta_expand_btn.setFixedHeight(24)
-        self.meta_expand_btn.clicked.connect(lambda: self.set_meta_collapsed(False))
-        collapsed_layout.addWidget(self.meta_expand_btn)
-        parent_layout.addWidget(self.meta_collapsed_bar)
 
         for widget in [
             self.build_input,
@@ -330,20 +353,20 @@ class ReportsWindow(QWidget):
     def _make_meta_input(placeholder: str) -> QLineEdit:
         widget = QLineEdit()
         widget.setPlaceholderText(placeholder)
-        widget.setFixedHeight(24)
+        widget.setFixedHeight(36)
         return widget
 
     def _build_fill_tab(self):
         self.fill_tab = QWidget()
         self.fill_tab.setObjectName("fillTab")
         fill_layout = QVBoxLayout(self.fill_tab)
-        fill_layout.setContentsMargins(0, 0, 0, 0)
-        fill_layout.setSpacing(8)
+        fill_layout.setContentsMargins(20, 22, 24, 28)
+        fill_layout.setSpacing(20)
 
         self.content_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.content_splitter.setObjectName("mainContentSplitter")
-        self.content_splitter.setChildrenCollapsible(True)
-        self.content_splitter.setHandleWidth(10)
+        self.content_splitter.setChildrenCollapsible(False)
+        self.content_splitter.setHandleWidth(20)
         fill_layout.addWidget(self.content_splitter, 1)
 
         self.sections_panel = QWidget()
@@ -495,19 +518,15 @@ class ReportsWindow(QWidget):
         self.tax_reference_input.setEnabled(checked)
         self.refresh_live_state()
 
-    # ---- Сворачивание/разворачивание панелей ----
-
     def set_hero_collapsed(self, collapsed: bool):
-        self._hero_collapsed = collapsed
-        self.hero_panel.setVisible(not collapsed)
-        self.hero_collapsed_bar.setVisible(collapsed)
+        self._hero_collapsed = False
+        self.hero_panel.setVisible(True)
         self.scroll_area.updateGeometry()
         self.refresh_live_state()
 
     def set_meta_collapsed(self, collapsed: bool):
-        self._meta_collapsed = collapsed
-        self.meta_group.setVisible(not collapsed)
-        self.meta_collapsed_bar.setVisible(collapsed)
+        self._meta_collapsed = False
+        self.meta_group.setVisible(True)
         self.scroll_area.updateGeometry()
         self.refresh_live_state()
 
@@ -680,8 +699,6 @@ class ReportsWindow(QWidget):
         return {
             "version": self.SESSION_CACHE_VERSION,
             "updated_at": datetime.now().isoformat(timespec="seconds"),
-            "hero_collapsed": self._hero_collapsed,
-            "meta_collapsed": self._meta_collapsed,
             "metadata": {
                 "build": metadata.build,
                 "database": metadata.database,
@@ -775,8 +792,6 @@ class ReportsWindow(QWidget):
                 section.issue_text.clear()
 
             self.renumber_sections()
-            self.set_hero_collapsed(False)
-            self.set_meta_collapsed(False)
         finally:
             self._session_cache_enabled = was_enabled
 
@@ -847,8 +862,6 @@ class ReportsWindow(QWidget):
                 self._attachment_counters[key] = max(self._attachment_counters.get(key, 0), index)
 
         self._sync_attachment_counters_from_content()
-        self.set_hero_collapsed(bool(cache.get("hero_collapsed", False)))
-        self.set_meta_collapsed(bool(cache.get("meta_collapsed", False)))
 
     # ---- Attachment-счётчик ----
 
@@ -892,25 +905,9 @@ class ReportsWindow(QWidget):
     def build_tax_reference_menu_prefix(self) -> str:
         return self.tax_reference_input.text().strip()
 
-    def build_collapsed_meta_summary(self) -> str:
-        metadata = self.collect_metadata()
-        build = metadata.build or "Build не указан"
-        database = metadata.database or "BD не указана"
-        sir = metadata.sir or "SIR не указан"
-        performer = metadata.performer or "исполнитель не указан"
-        return (
-            f"Параметры скрыты: {build} · {database} · "
-            f"вложения {sir} / {performer} · следующее {self.preview_attachment_text()}"
-        )
-
-    def build_collapsed_hero_summary(self) -> str:
-        return f"Конструктор отчетов скрыт · Разделов: {len(self.sections)}"
-
     def refresh_attachment_hints(self):
         attachment_text = self.preview_attachment_text()
         self.next_attachment_label.setText(attachment_text)
-        self.hero_collapsed_title.setText(self.build_collapsed_hero_summary())
-        self.meta_collapsed_title.setText(self.build_collapsed_meta_summary())
         for section in self.sections:
             section.set_attachment_hint(attachment_text)
 
@@ -1163,6 +1160,34 @@ class ReportsWindow(QWidget):
 
         for section in self.sections:
             section.set_ui_density(dense_mode)
+
+        if hasattr(self, "toolbar_layout"):
+            if dense_mode:
+                toolbar_widths = {
+                    self.add_btn: 110,
+                    self.remove_last_btn: 118,
+                    self.save_btn: 178,
+                    self.open_report_btn: 154,
+                    self.reset_cache_btn: 170,
+                }
+                self.sections_label.setFixedWidth(88)
+                self.toolbar_layout.setSpacing(8)
+                self.toolbar_gap.changeSize(12, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+            else:
+                toolbar_widths = {
+                    self.add_btn: 136,
+                    self.remove_last_btn: 146,
+                    self.save_btn: 220,
+                    self.open_report_btn: 190,
+                    self.reset_cache_btn: 206,
+                }
+                self.sections_label.setFixedWidth(112)
+                self.toolbar_layout.setSpacing(14)
+                self.toolbar_gap.changeSize(28, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+
+            for button, width in toolbar_widths.items():
+                button.setFixedWidth(width)
+            self.toolbar_layout.invalidate()
 
         if self._base_stylesheet:
             self.setStyleSheet(self._base_stylesheet)

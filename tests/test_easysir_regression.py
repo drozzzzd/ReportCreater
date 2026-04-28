@@ -54,7 +54,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
     def test_window_starts_with_empty_main_fields_and_zero_progress(self):
         self.assertEqual(self.window.windowTitle(), "Конструктор отчетов")
         self.assertEqual(len(self.window.sections), 1)
-        self.assertLessEqual(self.window.width(), 1120)
+        self.assertGreaterEqual(self.window.width(), 980)
         self.assertIsNotNone(self.window.preview_shell)
         self.assertIsNotNone(self.window.progress_shell)
         self.assertIsNotNone(self.window.hero_panel)
@@ -87,20 +87,20 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
             QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere,
         )
 
-    def test_section_editors_are_compact_and_resizable(self):
+    def test_section_editors_match_reference_density_and_resize(self):
         section = self.window.sections[0]
         self.assertIsInstance(section.pre_text, ResizablePlainTextEdit)
         self.assertIsInstance(section.scenario_text, ResizablePlainTextEdit)
         self.assertIsInstance(section.issue_text, ResizablePlainTextEdit)
-        self.assertEqual(section.pre_text.height(), 58)
-        self.assertEqual(section.scenario_text.height(), 58)
-        self.assertEqual(section.issue_text.height(), 58)
+        self.assertEqual(section.pre_text.height(), 106)
+        self.assertEqual(section.scenario_text.height(), 106)
+        self.assertEqual(section.issue_text.height(), 92)
         section.issue_text.setPlainText("\n".join(f"line {index}" for index in range(12)))
         self.app.processEvents()
-        self.assertGreater(section.issue_text.height(), 58)
+        self.assertGreater(section.issue_text.height(), 92)
         section.issue_text.clear()
         self.app.processEvents()
-        self.assertEqual(section.issue_text.height(), 58)
+        self.assertEqual(section.issue_text.height(), 92)
         self.assertIs(self.window.sections_layout.itemAt(0).widget(), section)
         self.assertIs(section.root_layout.itemAt(3).widget(), section.issue_group)
 
@@ -382,47 +382,36 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertEqual(self.window.completion_bar.value(), 100)
         self.assertIn("100%", self.window.completion_label.text())
 
-    def test_meta_panel_can_be_collapsed_to_give_sections_more_space(self):
+    def test_constructor_tab_has_no_collapse_controls(self):
         self.window.build_input.setText("5917")
         self.window.database_input.setText("Test")
         self.window.sir_input.setText("43533")
         self.window.performer_input.setText("IM")
         self.app.processEvents()
-        expanded_height = self.window.meta_group.sizeHint().height()
 
         self.window.set_meta_collapsed(True)
-        self.app.processEvents()
-
-        self.assertTrue(self.window.meta_group.isHidden())
-        self.assertFalse(self.window.meta_collapsed_bar.isHidden())
-        self.assertLess(self.window.meta_collapsed_bar.sizeHint().height(), expanded_height)
-        self.assertIn("5917", self.window.meta_collapsed_title.text())
-        self.assertIn("Test", self.window.meta_collapsed_title.text())
-        self.assertIn("attachment:43533_IM_01.jpg", self.window.meta_collapsed_title.text())
-
-        self.window.set_meta_collapsed(False)
-        self.app.processEvents()
-
-        self.assertFalse(self.window.meta_group.isHidden())
-        self.assertTrue(self.window.meta_collapsed_bar.isHidden())
-
-    def test_top_constructor_panel_can_be_collapsed(self):
         self.window.set_hero_collapsed(True)
         self.app.processEvents()
 
-        self.assertTrue(self.window.hero_panel.isHidden())
-        self.assertFalse(self.window.hero_collapsed_bar.isHidden())
-        self.assertIn("Конструктор отчетов скрыт", self.window.hero_collapsed_title.text())
-        self.assertIn("Разделов: 1", self.window.hero_collapsed_title.text())
+        self.assertFalse(hasattr(self.window, "hero_collapse_btn"))
+        self.assertFalse(hasattr(self.window, "hero_expand_btn"))
+        self.assertFalse(hasattr(self.window, "meta_collapse_btn"))
+        self.assertFalse(hasattr(self.window, "meta_expand_btn"))
+        self.assertFalse(hasattr(self.window, "hero_collapsed_bar"))
+        self.assertFalse(hasattr(self.window, "meta_collapsed_bar"))
+        self.assertFalse(self.window.hero_panel.isHidden())
+        self.assertFalse(self.window.meta_group.isHidden())
+
+    def test_top_constructor_panel_keeps_section_summary_visible(self):
+        self.window.set_hero_collapsed(True)
+        self.app.processEvents()
+
+        self.assertFalse(self.window.hero_panel.isHidden())
+        self.assertEqual(self.window.sections_label.text(), "Разделов: 1")
 
         self.window.add_section()
         self.app.processEvents()
-        self.assertIn("Разделов: 2", self.window.hero_collapsed_title.text())
-
-        self.window.set_hero_collapsed(False)
-        self.app.processEvents()
-        self.assertFalse(self.window.hero_panel.isHidden())
-        self.assertTrue(self.window.hero_collapsed_bar.isHidden())
+        self.assertEqual(self.window.sections_label.text(), "Разделов: 2")
 
     def test_attachment_preview_labels_show_next_value_without_reserving_counter(self):
         section = self.window.sections[0]
@@ -441,8 +430,6 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.window.doc_input.setText("doc-1")
         self.window.tax_reference_input.setText("tax-reference-1")
         section._insert_attachment(section.issue_text)
-        self.window.set_hero_collapsed(True)
-        self.window.set_meta_collapsed(True)
         self.app.processEvents()
 
         cache_path = Path(self.window._session_cache_path)
@@ -459,8 +446,8 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
             self.assertEqual(restored.tax_reference_input.text(), "tax-reference-1")
             self.assertEqual(restored.sections[0].title_input.text(), "Проверка отчета")
             self.assertIn("attachment:SIR-2026-001_IM_01.jpg", restored.sections[0].issue_text.toPlainText())
-            self.assertTrue(restored.hero_panel.isHidden())
-            self.assertTrue(restored.meta_group.isHidden())
+            self.assertFalse(restored.hero_panel.isHidden())
+            self.assertFalse(restored.meta_group.isHidden())
             self.assertEqual(restored.build_attachment_text(), "attachment:SIR-2026-001_IM_02.jpg")
         finally:
             restored.close()
