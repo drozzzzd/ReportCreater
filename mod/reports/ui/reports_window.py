@@ -5,9 +5,10 @@ import json
 import os
 from datetime import datetime
 
-from PyQt6.QtCore import QRectF, QSize, Qt, QUrl
-from PyQt6.QtGui import QBrush, QColor, QDesktopServices, QPainter, QPen, QTextOption
+from PyQt6.QtCore import QRectF, QSize, Qt
+from PyQt6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QTextOption
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QDialog,
     QFileDialog,
@@ -17,6 +18,9 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
     QMessageBox,
     QPlainTextEdit,
     QProgressBar,
@@ -26,8 +30,10 @@ from PyQt6.QtWidgets import (
     QSpacerItem,
     QStyle,
     QTabWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
+    QWidgetAction,
 )
 
 from ..core.attachment_counter import (
@@ -39,12 +45,177 @@ from ..core.attachment_counter import (
 from ..core.report_builder import TextReportBuilder
 from ..core.report_data import ReportMetadata, ReportSectionData
 from ..core.report_parser import TextReportParser
+from ..core.report_store import ReportStore
+from ..dialogs.settings import SettingsDialog
 from ..dialogs.validation_issues import ValidationIssuesDialog
+from ..utils.app_assets import apply_windows_dark_frame
 from ..utils.icons import load_mode_icons
 from ..utils.paths import get_project_root
 from ..utils.widget_helpers import install_clearable_context_menu, set_invalid_state
 from ..widgets.smooth_scroll_area import SmoothScrollArea
 from .section_widget import ReportSectionWidget
+
+
+DARK_STYLE_OVERRIDES = """
+ReportsWindow,
+QDialog,
+QFileDialog,
+QMessageBox {
+    background-color: #171B22;
+    color: #F4F7FB;
+}
+
+ReportsWindow QWidget#setupTab,
+ReportsWindow QWidget#fillTab,
+ReportsWindow QWidget#setupScrollContent,
+ReportsWindow QWidget#sectionsPanel,
+ReportsWindow QWidget#sectionsHost,
+ReportsWindow QWidget#sidePanel,
+QDialog QWidget,
+QFileDialog QWidget {
+    background-color: #171B22;
+    color: #F4F7FB;
+}
+
+QTabWidget#mainTabs::pane {
+    border-top-color: #2A3140;
+    background-color: #171B22;
+}
+
+QTabWidget#mainTabs QTabBar::tab {
+    color: #AEB8C8;
+}
+
+QTabWidget#mainTabs QTabBar::tab:hover,
+QTabWidget#mainTabs QTabBar::tab:selected {
+    color: #FFFFFF;
+}
+
+QFrame#heroPanel,
+QFrame#metaGroup,
+QFrame#previewShell,
+QFrame#progressShell,
+QFrame#reportSectionCard,
+QGroupBox {
+    background-color: #202633;
+    border-color: #323B4D;
+    color: #F4F7FB;
+}
+
+QGroupBox::title {
+    background-color: #202633;
+    color: #F4F7FB;
+}
+
+QLabel,
+QLabel#heroTitle,
+QLabel#panelTitle,
+QLabel#previewWindowTitle,
+QLabel#attachmentPreviewLabel,
+QLabel#attachmentHintLabel {
+    color: #F4F7FB;
+}
+
+QLabel#heroSubtitle,
+QLabel#summaryLabel,
+QLabel#metaSectionLabel,
+QLabel#previewHintLabel,
+QLabel#previewWindowState {
+    color: #B7C2D4;
+}
+
+QLineEdit,
+QPlainTextEdit,
+QComboBox,
+QListView,
+QTreeView,
+QTableView,
+QListWidget {
+    background-color: #12161D;
+    border: 1px solid #394356;
+    color: #F7FAFF;
+    selection-background-color: #2F6FEA;
+    selection-color: #FFFFFF;
+}
+
+QLineEdit:hover,
+QPlainTextEdit:hover,
+QComboBox:hover {
+    border-color: #4C5B73;
+}
+
+QLineEdit:focus,
+QPlainTextEdit:focus,
+QComboBox:focus {
+    border-color: #6EA2FF;
+}
+
+QLineEdit[readOnly="true"] {
+    background-color: #12161D;
+    color: #DDE6F5;
+}
+
+QPushButton,
+QToolButton#modeButton,
+QToolButton#settingsButton,
+QToolButton#themeToggleButton {
+    background-color: #252C3A;
+    border-color: #3A4558;
+    color: #F4F7FB;
+}
+
+QPushButton:hover,
+QToolButton#modeButton:hover,
+QToolButton#settingsButton:hover,
+QToolButton#themeToggleButton:hover {
+    background-color: #2C3546;
+    border-color: #4B5A72;
+}
+
+QPushButton[buttonType="secondary"],
+QPushButton#resetCacheBtn {
+    background-color: #202633;
+    color: #F4F7FB;
+    border-color: #3A4558;
+}
+
+QMenu,
+QMenu#splitDropdownMenu,
+QMenu#reportHistoryMenu {
+    background-color: #202633;
+    border: 1px solid #3A4558;
+    color: #F4F7FB;
+}
+
+QMenu::item:selected {
+    background-color: #2F6FEA;
+    color: #FFFFFF;
+}
+
+QFrame#previewWindowBar {
+    border-bottom-color: #323B4D;
+}
+
+QProgressBar {
+    background-color: #12161D;
+    border-color: #394356;
+    color: #FFFFFF;
+}
+
+QScrollBar::handle:vertical {
+    background: #526077;
+}
+
+QLabel#settingsDialogTitle {
+    color: #FFFFFF;
+}
+
+QListWidget#reportHistoryList::item:hover,
+QListWidget#reportHistoryList::item:selected {
+    background-color: #2F6FEA;
+    color: #FFFFFF;
+}
+"""
 
 
 class HeroIllustration(QWidget):
@@ -104,16 +275,21 @@ class ReportsWindow(QWidget):
         self._meta_collapsed = False
         self._session_cache_enabled = False
         self._session_cache_path = self.get_session_cache_path()
+        self._report_store = ReportStore(self.get_report_store_path())
+        self._user_settings = self._load_user_settings()
+        self._current_theme = self._user_settings["theme"]
 
         self.setWindowTitle("Конструктор отчетов")
         self.resize(1180, 760)
         self.setMinimumSize(860, 560)
 
         self._load_styles()
+        self._apply_theme(self._current_theme)
         self._build_ui()
         self._connect_live_updates()
         self.add_section()
         self.restore_session_cache()
+        self.apply_saved_preferences()
         self._session_cache_enabled = True
         self.refresh_live_state()
 
@@ -125,7 +301,79 @@ class ReportsWindow(QWidget):
             return
         with open(style_path, "r", encoding="utf-8") as file:
             self._base_stylesheet = file.read()
-        self.setStyleSheet(self._base_stylesheet)
+        self.setStyleSheet(self._compose_stylesheet())
+
+    def _compose_stylesheet(self) -> str:
+        if self._current_theme == "dark":
+            return f"{self._base_stylesheet}\n{DARK_STYLE_OVERRIDES}"
+        return self._base_stylesheet
+
+    def _apply_theme(self, theme: str) -> None:
+        self._current_theme = "dark" if theme == "dark" else "light"
+        self.setProperty("theme", self._current_theme)
+        self.setStyleSheet(self._compose_stylesheet())
+        self._apply_theme_palette()
+        apply_windows_dark_frame(self, self._current_theme == "dark")
+
+        if hasattr(self, "theme_toggle_btn"):
+            self.theme_toggle_btn.setText("☀" if self._current_theme == "dark" else "☾")
+            self.theme_toggle_btn.setToolTip("Переключить на светлую тему" if self._current_theme == "dark" else "Переключить на темную тему")
+
+    def _apply_theme_palette(self) -> None:
+        app = QApplication.instance()
+        if app is None:
+            return
+
+        palette = QPalette()
+        if self._current_theme == "dark":
+            palette.setColor(QPalette.ColorRole.Window, QColor("#171B22"))
+            palette.setColor(QPalette.ColorRole.WindowText, QColor("#F4F7FB"))
+            palette.setColor(QPalette.ColorRole.Base, QColor("#12161D"))
+            palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#202633"))
+            palette.setColor(QPalette.ColorRole.Text, QColor("#F7FAFF"))
+            palette.setColor(QPalette.ColorRole.Button, QColor("#252C3A"))
+            palette.setColor(QPalette.ColorRole.ButtonText, QColor("#F4F7FB"))
+            palette.setColor(QPalette.ColorRole.Highlight, QColor("#2F6FEA"))
+            palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.PlaceholderText, QColor("#8692A6"))
+        else:
+            palette = app.style().standardPalette()
+        app.setPalette(palette)
+
+    def _config_section(self, key: str) -> dict:
+        section = self.config.setdefault(key, {})
+        if not isinstance(section, dict):
+            section = {}
+            self.config[key] = section
+        return section
+
+    def _load_user_settings(self) -> dict:
+        ui_config = self._config_section("ui")
+        preferences = self._config_section("preferences")
+        return {
+            "theme": "dark" if str(ui_config.get("theme", "light")).lower() == "dark" else "light",
+            "default_performer": str(preferences.get("default_performer", "")).strip(),
+            "default_output_dir": str(preferences.get("default_output_dir", "")).strip(),
+            "remember_defaults": bool(preferences.get("remember_defaults", False)),
+        }
+
+    def _save_config(self) -> None:
+        if not self.config_path:
+            return
+        try:
+            with open(self.config_path, "w", encoding="utf-8") as file:
+                json.dump(self.config, file, ensure_ascii=False, indent=4)
+        except OSError:
+            return
+
+    def toggle_theme(self) -> None:
+        self.set_theme("light" if self._current_theme == "dark" else "dark")
+
+    def set_theme(self, theme: str) -> None:
+        self._user_settings["theme"] = "dark" if theme == "dark" else "light"
+        self._config_section("ui")["theme"] = self._user_settings["theme"]
+        self._save_config()
+        self._apply_theme(self._user_settings["theme"])
 
     # ---- Построение UI ----
 
@@ -140,7 +388,60 @@ class ReportsWindow(QWidget):
 
         self._build_setup_tab()
         self._build_fill_tab()
+        self._build_tab_corner_actions()
+        self.main_tabs.currentChanged.connect(self._sync_tab_corner_actions)
         self._update_responsive_layout(force=True)
+
+    def _build_tab_corner_actions(self):
+        self.tab_actions = QFrame()
+        self.tab_actions.setObjectName("tabCornerActions")
+        actions_layout = QHBoxLayout(self.tab_actions)
+        actions_layout.setContentsMargins(0, 0, 14, 0)
+        actions_layout.setSpacing(8)
+
+        self.add_btn = QPushButton("+  Раздел")
+        self.add_btn.setObjectName("primaryBtn")
+        self.add_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder))
+        self.add_btn.clicked.connect(self.add_section)
+
+        self.remove_last_btn = QPushButton("- Последний")
+        self.remove_last_btn.setProperty("buttonType", "secondary")
+        self.remove_last_btn.clicked.connect(self.remove_last_section)
+
+        self.theme_toggle_btn = QToolButton()
+        self.theme_toggle_btn.setObjectName("themeToggleButton")
+        self.theme_toggle_btn.setAutoRaise(False)
+        self.theme_toggle_btn.setFixedSize(34, 30)
+        self.theme_toggle_btn.clicked.connect(self.toggle_theme)
+
+        self.settings_btn = QToolButton()
+        self.settings_btn.setObjectName("settingsButton")
+        self.settings_btn.setAutoRaise(False)
+        self.settings_btn.setFixedSize(34, 30)
+        self.settings_btn.setText("⚙")
+        self.settings_btn.setToolTip("Настройки")
+        self.settings_btn.clicked.connect(self.open_settings_dialog)
+
+        for button in (self.add_btn, self.remove_last_btn):
+            button.setMinimumHeight(30)
+            button.setIconSize(QSize(15, 15))
+        self.add_btn.setFixedWidth(104)
+        self.remove_last_btn.setFixedWidth(112)
+
+        actions_layout.addWidget(self.add_btn)
+        actions_layout.addWidget(self.remove_last_btn)
+        actions_layout.addWidget(self.theme_toggle_btn)
+        actions_layout.addWidget(self.settings_btn)
+        self.main_tabs.setCornerWidget(self.tab_actions, Qt.Corner.TopRightCorner)
+        self._apply_theme(self._current_theme)
+        self._sync_tab_corner_actions()
+
+    def _sync_tab_corner_actions(self):
+        if not hasattr(self, "tab_actions"):
+            return
+        fill_tab_active = self.main_tabs.currentWidget() is self.fill_tab
+        self.add_btn.setVisible(fill_tab_active)
+        self.remove_last_btn.setVisible(fill_tab_active)
 
     def _build_setup_tab(self):
         self.setup_tab = QWidget()
@@ -176,15 +477,6 @@ class ReportsWindow(QWidget):
         toolbar_layout.setContentsMargins(0, 0, 0, 0)
         toolbar_layout.setSpacing(14)
 
-        self.add_btn = QPushButton("+  Раздел")
-        self.add_btn.setObjectName("primaryBtn")
-        self.add_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder))
-        self.add_btn.clicked.connect(self.add_section)
-
-        self.remove_last_btn = QPushButton("- Последний")
-        self.remove_last_btn.setProperty("buttonType", "secondary")
-        self.remove_last_btn.clicked.connect(self.remove_last_section)
-
         self.save_btn = QPushButton("Сохранить отчет")
         self.save_btn.setObjectName("saveBtn")
         self.save_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
@@ -193,7 +485,12 @@ class ReportsWindow(QWidget):
         self.open_report_btn = QPushButton("Открыть отчет")
         self.open_report_btn.setProperty("buttonType", "secondary")
         self.open_report_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
-        self.open_report_btn.clicked.connect(self.select_report_file)
+        self.open_report_btn.clicked.connect(self.show_report_history)
+
+        self.open_file_btn = QPushButton("Из файлов")
+        self.open_file_btn.setProperty("buttonType", "secondary")
+        self.open_file_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView))
+        self.open_file_btn.clicked.connect(self.select_report_file)
 
         self.reset_cache_btn = QPushButton("Сброс черновика")
         self.reset_cache_btn.setObjectName("resetCacheBtn")
@@ -204,23 +501,21 @@ class ReportsWindow(QWidget):
         self.sections_label.setObjectName("summaryLabel")
         self.sections_label.setProperty("summaryBadge", "true")
 
-        for button in (self.add_btn, self.remove_last_btn, self.save_btn, self.open_report_btn):
+        for button in (self.save_btn, self.open_report_btn, self.open_file_btn):
             button.setMinimumHeight(34)
             button.setIconSize(QSize(15, 15))
         self.reset_cache_btn.setMinimumHeight(34)
         self.reset_cache_btn.setIconSize(QSize(15, 15))
-        self.add_btn.setFixedWidth(112)
-        self.remove_last_btn.setFixedWidth(120)
         self.save_btn.setFixedWidth(178)
         self.open_report_btn.setFixedWidth(154)
+        self.open_file_btn.setFixedWidth(126)
         self.reset_cache_btn.setFixedWidth(170)
         self.sections_label.setFixedWidth(88)
 
-        toolbar_layout.addWidget(self.add_btn)
-        toolbar_layout.addWidget(self.remove_last_btn)
         toolbar_layout.addStretch(1)
         toolbar_layout.addWidget(self.save_btn)
         toolbar_layout.addWidget(self.open_report_btn)
+        toolbar_layout.addWidget(self.open_file_btn)
         self.toolbar_gap = QSpacerItem(28, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
         toolbar_layout.addItem(self.toolbar_gap)
         toolbar_layout.addWidget(self.sections_label)
@@ -303,7 +598,10 @@ class ReportsWindow(QWidget):
         self.tax_reference_input = self._make_meta_input("Введите Tax Referens")
 
         # Папка сохранения
-        path_row = QHBoxLayout()
+        self.output_dir_row_widget = QWidget()
+        path_row = QHBoxLayout(self.output_dir_row_widget)
+        path_row.setContentsMargins(0, 0, 0, 0)
+        path_row.setSpacing(6)
         self.output_dir_input = QLineEdit()
         self.output_dir_input.setReadOnly(True)
         self.output_dir_input.setText(self.get_output_dir())
@@ -324,13 +622,14 @@ class ReportsWindow(QWidget):
         self.next_attachment_label.setObjectName("attachmentPreviewLabel")
         self.next_attachment_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
+        self.meta_layout = meta_layout
         meta_layout.addRow(report_fields_label)
         meta_layout.addRow("Build:", self.build_input)
         meta_layout.addRow("BD:", self.database_input)
         meta_layout.addRow(self.sql_check, self.sql_input)
         meta_layout.addRow(self.doc_check, self.doc_input)
         meta_layout.addRow(self.tax_reference_check, self.tax_reference_input)
-        meta_layout.addRow("Папка сохранения:", path_row)
+        meta_layout.addRow("Папка сохранения:", self.output_dir_row_widget)
         meta_layout.addRow(service_fields_label)
         meta_layout.addRow("SIR:", self.sir_input)
         meta_layout.addRow("Исполнитель:", self.performer_input)
@@ -553,22 +852,135 @@ class ReportsWindow(QWidget):
             base_dir = os.path.join(get_project_root(), base_dir)
         return os.path.join(base_dir, ".report_builder_session_cache.json")
 
+    def get_report_store_path(self) -> str:
+        general_config = self.config.get("general", {})
+        store_path = general_config.get("report_store_path")
+        if store_path:
+            if not os.path.isabs(store_path):
+                store_path = os.path.join(get_project_root(), store_path)
+            return store_path
+
+        base_dir = general_config.get("reports_dir", "reports")
+        if not os.path.isabs(base_dir):
+            base_dir = os.path.join(get_project_root(), base_dir)
+        return os.path.join(base_dir, ".report_history.sqlite3")
+
+    def effective_output_dir(self) -> str:
+        remembered_path = self._user_settings.get("default_output_dir", "")
+        if self._user_settings.get("remember_defaults") and remembered_path:
+            return remembered_path
+        return self.output_dir_input.text().strip() or self.get_output_dir()
+
+    def open_settings_dialog(self):
+        dialog = SettingsDialog(self._user_settings, self)
+        dialog.setStyleSheet(self._compose_stylesheet())
+        apply_windows_dark_frame(dialog, self._current_theme == "dark")
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        self._user_settings = dialog.values()
+        self._config_section("ui")["theme"] = self._user_settings["theme"]
+        preferences = self._config_section("preferences")
+        preferences["default_performer"] = self._user_settings["default_performer"]
+        preferences["default_output_dir"] = self._user_settings["default_output_dir"]
+        preferences["remember_defaults"] = self._user_settings["remember_defaults"]
+        self._save_config()
+        self._apply_theme(self._user_settings["theme"])
+        self.apply_saved_preferences()
+        self.refresh_live_state()
+
+    def apply_saved_preferences(self):
+        remember = bool(self._user_settings.get("remember_defaults", False))
+        performer = str(self._user_settings.get("default_performer", "")).strip()
+        output_dir = str(self._user_settings.get("default_output_dir", "")).strip()
+
+        if remember and performer:
+            self.performer_input.setText(performer)
+        if remember and output_dir:
+            self.output_dir_input.setText(output_dir)
+
+        self._set_form_field_visible(self.performer_input, not (remember and bool(performer)))
+        self._set_form_field_visible(self.output_dir_row_widget, not (remember and bool(output_dir)))
+
+    def _set_form_field_visible(self, field_widget: QWidget, visible: bool):
+        field_widget.setVisible(visible)
+        if hasattr(self, "meta_layout"):
+            label = self.meta_layout.labelForField(field_widget)
+            if label is not None:
+                label.setVisible(visible)
+
+    def _prepare_dialog(self, dialog: QFileDialog) -> QFileDialog:
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        dialog.setStyleSheet(self._compose_stylesheet())
+        apply_windows_dark_frame(dialog, self._current_theme == "dark")
+        return dialog
+
     def select_output_dir(self):
-        folder = QFileDialog.getExistingDirectory(self, "Выберите папку для сохранения отчетов")
-        if folder:
-            self.output_dir_input.setText(folder)
+        dialog = self._prepare_dialog(QFileDialog(self, "Выберите папку для сохранения отчетов"))
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selected = dialog.selectedFiles()
+            if selected:
+                self.output_dir_input.setText(selected[0])
 
     def select_report_file(self):
-        folder = self.output_dir_input.text().strip() or self.get_output_dir()
+        folder = self.effective_output_dir()
         os.makedirs(folder, exist_ok=True)
-        filepath, _ = QFileDialog.getOpenFileName(
-            self,
-            "Открыть отчет",
-            folder,
-            "Текстовые отчеты (*.txt);;Все файлы (*)",
-        )
-        if filepath:
-            self.load_report_from_file(filepath)
+        dialog = self._prepare_dialog(QFileDialog(self, "Выбрать отчет из файлов", folder))
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setNameFilters(["Текстовые отчеты (*.txt)", "Все файлы (*)"])
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selected = dialog.selectedFiles()
+            if selected:
+                self.load_report_from_file(selected[0])
+
+    def show_report_history(self):
+        records = self._report_store.list_recent(limit=100)
+        if not records:
+            QMessageBox.information(
+                self,
+                "История пуста",
+                "Внутренняя история отчетов пока пустая. Используйте кнопку \"Из файлов\", чтобы открыть TXT вручную.",
+            )
+            return
+
+        menu = QMenu(self)
+        menu.setObjectName("reportHistoryMenu")
+        menu.setStyleSheet(self._compose_stylesheet())
+        list_widget = QListWidget(menu)
+        list_widget.setObjectName("reportHistoryList")
+        list_widget.setUniformItemSizes(True)
+        list_widget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_widget.setFixedWidth(420)
+        row_height = 44
+        list_widget.setFixedHeight(min(len(records), 7) * row_height + 6)
+
+        for record in records:
+            item = QListWidgetItem(f"{record['title']}\n{record['saved_at']}")
+            item.setData(Qt.ItemDataRole.UserRole, int(record["id"]))
+            list_widget.addItem(item)
+
+        action = QWidgetAction(menu)
+        action.setDefaultWidget(list_widget)
+        menu.addAction(action)
+
+        def load_selected(item: QListWidgetItem):
+            menu.close()
+            report_id = int(item.data(Qt.ItemDataRole.UserRole))
+            self.load_report_from_store(report_id)
+
+        list_widget.itemClicked.connect(load_selected)
+        menu.exec(self.open_report_btn.mapToGlobal(self.open_report_btn.rect().bottomLeft()))
+
+    def load_report_from_store(self, report_id: int):
+        record = self._report_store.get(report_id)
+        if record is None:
+            QMessageBox.warning(self, "Отчет не найден", "Запись во внутренней истории больше недоступна.")
+            return
+        metadata, sections = self._report_store.decode_record(record)
+        self.apply_loaded_report(metadata, sections)
 
     def load_report_from_file(self, filepath: str):
         try:
@@ -796,6 +1208,7 @@ class ReportsWindow(QWidget):
         finally:
             self._session_cache_enabled = was_enabled
 
+        self.apply_saved_preferences()
         self.refresh_live_state()
 
     def restore_session_cache(self):
@@ -1029,7 +1442,7 @@ class ReportsWindow(QWidget):
         return round((filled / total) * 100)
 
     def build_preview_text(self) -> str:
-        builder = TextReportBuilder(self.output_dir_input.text().strip() or self.get_output_dir())
+        builder = TextReportBuilder(self.effective_output_dir())
         return builder.build_content(self.collect_metadata(), self.collect_sections())
 
     def refresh_live_state(self):
@@ -1106,18 +1519,23 @@ class ReportsWindow(QWidget):
         if not self.confirm_issue_numbers():
             return
 
-        builder = TextReportBuilder(self.output_dir_input.text().strip() or self.get_output_dir())
-        filepath = builder.save(metadata, self.collect_sections())
+        sections = self.collect_sections()
+        builder = TextReportBuilder(self.effective_output_dir())
+        filepath = builder.save(metadata, sections)
+        self._report_store.save(
+            metadata=metadata,
+            sections=sections,
+            filepath=filepath,
+            content=builder.build_content(metadata, sections),
+        )
         self.save_session_cache()
 
-        reply = QMessageBox.question(
+        QMessageBox.question(
             self,
             "Отчет сохранен",
-            f"Файл успешно сохранен:\n{filepath}\n\nОткрыть папку?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            f"Отчет сохранен во внутренней истории и TXT-файле:\n{filepath}",
+            QMessageBox.StandardButton.Ok,
         )
-        if reply == QMessageBox.StandardButton.Yes:
-            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(filepath)))
 
     # ---- Адаптивность ----
 
@@ -1169,6 +1587,7 @@ class ReportsWindow(QWidget):
                     self.remove_last_btn: 112,
                     self.save_btn: 164,
                     self.open_report_btn: 144,
+                    self.open_file_btn: 116,
                     self.reset_cache_btn: 158,
                 }
                 self.sections_label.setFixedWidth(84)
@@ -1180,6 +1599,7 @@ class ReportsWindow(QWidget):
                     self.remove_last_btn: 120,
                     self.save_btn: 178,
                     self.open_report_btn: 154,
+                    self.open_file_btn: 126,
                     self.reset_cache_btn: 170,
                 }
                 self.sections_label.setFixedWidth(88)
@@ -1191,4 +1611,4 @@ class ReportsWindow(QWidget):
             self.toolbar_layout.invalidate()
 
         if self._base_stylesheet:
-            self.setStyleSheet(self._base_stylesheet)
+            self.setStyleSheet(self._compose_stylesheet())

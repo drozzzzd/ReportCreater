@@ -56,6 +56,64 @@ QFrame#constructorToolbar {
     border: none;
 }
 
+QFrame#tabCornerActions {
+    background: transparent;
+    border: none;
+}
+
+QToolButton#settingsButton,
+QToolButton#themeToggleButton {
+    background-color: #FFFFFF;
+    border: 1px solid #DDE3EC;
+    border-radius: 7px;
+    color: #273044;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+QToolButton#settingsButton:hover,
+QToolButton#themeToggleButton:hover {
+    background-color: #F7F9FC;
+    border-color: #C9D3E1;
+}
+
+QDialog#settingsDialog {
+    background-color: #FBFCFF;
+    color: #273044;
+}
+
+QLabel#settingsDialogTitle {
+    color: #283044;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+QMenu#reportHistoryMenu {
+    background-color: #FFFFFF;
+    border: 1px solid #DDE3EC;
+    border-radius: 10px;
+    padding: 6px;
+}
+
+QListWidget#reportHistoryList {
+    background-color: #FFFFFF;
+    border: none;
+    color: #273044;
+    font-size: 12px;
+    outline: none;
+}
+
+QListWidget#reportHistoryList::item {
+    border-radius: 7px;
+    padding: 6px 8px;
+}
+
+QListWidget#reportHistoryList::item:hover,
+QListWidget#reportHistoryList::item:selected {
+    background-color: #EDF4FF;
+    color: #083A8F;
+}
+
 QPushButton {
     background-color: #FFFFFF;
     border: 1px solid #DDE3EC;
