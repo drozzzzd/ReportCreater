@@ -1,0 +1,590 @@
+Зависимости вкладок ReportCreater для ChatGPT
+Дата анализа: 2026-04-28
+Проект: c:\divan_api_tester
+
+Важно: promt.md на диске пустой, размер 0 байт. Поэтому этот файл фиксирует вторую просьбу: зависимости по открываемым вкладкам и их логике в программе.
+
+1. Точка входа приложения
+
+main.py:
+- Загружает config.json через load_config().
+- Создает QApplication.
+- Создает главное окно ReportsWindow из mod/reports/reports_window.py.
+- Передает в ReportsWindow конфиг и путь к config.json.
+
+config.json:
+- general.reports_dir задает базовую папку отчетов.
+- По умолчанию используется reports.
+
+Главная зависимость UI:
+- main.py -> mod.reports.reports_window.ReportsWindow -> mod/reports/ui/reports_window.py.
+
+Внешняя библиотека:
+- PyQt6 - все виджеты интерфейса, меню, вкладки, диалоги, иконки, открытие папки.
+
+2. Главные вкладки окна
+
+Главное окно создает QTabWidget self.main_tabs в ReportsWindow._build_ui().
+В программе есть две главные вкладки:
+- Конструктор отчетов.
+- Заполнение ошибок и предпросмотр.
+
+2.1. Вкладка "Конструктор отчетов"
+
+Создается в:
+- mod/reports/ui/reports_window.py -> ReportsWindow._build_setup_tab().
+
+Что содержит:
+- Scroll area с рабочим содержимым.
+- Верхнюю панель действий.
+- Hero-панель.
+- Группу параметров отчета.
+
+Кнопки верхней панели:
+- "+ Раздел" -> ReportsWindow.add_section().
+- "- Последний" -> ReportsWindow.remove_last_section().
+- "Сохранить отчет" -> ReportsWindow.save_report().
+- "Открыть отчет" -> ReportsWindow.select_report_file().
+- "Сброс черновика" -> ReportsWindow.reset_autosave_draft().
+- Счетчик "Разделов: N" обновляется в ReportsWindow.renumber_sections().
+
+Поля параметров отчета:
+- Build.
+- BD.
+- SQL, включается или выключается чекбоксом include_sql.
+- DOC, включается или выключается чекбоксом include_doc.
+- Tax Referens, включается или выключается чекбоксом include_tax_reference.
+- Папка сохранения.
+- SIR.
+- Исполнитель.
+- Следующее вложение.
+
+Как данные вкладки уходят в логику:
+- ReportsWindow.collect_metadata() собирает поля в ReportMetadata.
+- ReportMetadata используется для предпросмотра, сохранения, валидации, autosave и генерации вложений.
+- SIR нужен для имени файла отчета и attachment-строк.
+- Исполнитель нужен для attachment-строк.
+- SQL, DOC и Tax Referens попадают в итоговый TXT только если включены соответствующие чекбоксы.
+
+Живые обновления:
+- ReportsWindow._connect_live_updates() подписывает поля на refresh_live_state().
+- При изменении любого поля обновляются:
+  - предпросмотр;
+  - подсказка следующего attachment;
+  - прогресс заполненности;
+  - autosave-кеш.
+
+Файловые зависимости вкладки:
+- mod/reports/ui/reports_window.py - UI и обработчики.
+- mod/reports/core/report_data.py - структура ReportMetadata.
+- mod/reports/core/report_builder.py - сборка preview и сохранение TXT.
+- mod/reports/core/report_parser.py - восстановление данных при открытии TXT.
+- mod/reports/core/attachment_counter.py - расчет следующего attachment.
+- mod/reports/dialogs/validation_issues.py - диалог ошибок валидации.
+- mod/reports/utils/widget_helpers.py - clearable context menu и invalid-state.
+- styles/reports_window.qss - стили вкладки.
+
+2.2. Вкладка "Заполнение ошибок и предпросмотр"
+
+Создается в:
+- mod/reports/ui/reports_window.py -> ReportsWindow._build_fill_tab().
+
+Что содержит:
+- QSplitter content_splitter.
+- Левая часть: список секций отчета.
+- Правая часть: предпросмотр итогового TXT и прогресс заполненности.
+
+Левая часть:
+- sections_panel.
+- sections_scroll_area.
+- sections_layout.
+- Каждый раздел является ReportSectionWidget из mod/reports/ui/section_widget.py.
+
+Правая часть:
+- preview_text - readonly QPlainTextEdit с итоговым текстом отчета.
+- completion_bar - QProgressBar заполненности.
+- completion_label и completion_hint.
+
+Как данные вкладки уходят в логику:
+- ReportsWindow.collect_sections() собирает все ReportSectionWidget в список ReportSectionData.
+- ReportsWindow.build_preview_text() передает ReportMetadata и список ReportSectionData в TextReportBuilder.build_content().
+- refresh_live_state() пишет результат build_preview_text() в preview_text.
+- save_report() сохраняет тот же набор данных в TXT через TextReportBuilder.save().
+
+Адаптивность:
+- ReportsWindow._update_responsive_layout() меняет ориентацию content_splitter:
+  - ширина меньше 1040: вертикально;
+  - иначе горизонтально.
+- ReportsWindow._update_density_mode() меняет плотность UI секций и ширины кнопок.
+
+Файловые зависимости вкладки:
+- mod/reports/ui/reports_window.py - вкладка, splitter, preview, progress, сбор данных.
+- mod/reports/ui/section_widget.py - секции и поля внутри секций.
+- mod/reports/core/report_data.py - ReportSectionData.
+- mod/reports/core/report_builder.py - итоговый TXT и preview.
+- mod/reports/core/attachment_counter.py - attachment-подсказки.
+- mod/reports/widgets/smooth_scroll_area.py - плавная прокрутка.
+- mod/reports/widgets/resizable_text_edit.py - авторазмер текстовых полей.
+- mod/reports/widgets/segmented_control.py - переключатель Error / Question / Текст.
+- styles/reports_window.qss - стили вкладки.
+
+3. Логика одного раздела отчета
+
+Создается в:
+- mod/reports/ui/section_widget.py -> ReportSectionWidget.
+
+Раздел содержит:
+- Номер ошибки.
+- Название.
+- Блок Pre-Condition.
+- Блок Scenario.
+- Блок Ошибка / Вопрос / Текст.
+- Переключатель типа: Error, Question, Текст.
+
+Mode-кнопки и кнопка "Справка ФНС":
+- Добавляются только в блоки Pre-Condition и Scenario.
+- В блоке Ошибка / Вопрос / Текст mode-кнопок нет, там только helper-кнопки и тип записи.
+
+Helper-кнопки:
+- Rus -> вставляет "' '".
+- Прочерк -> вставляет " - ".
+- Вложение -> вызывает attachment_provider из ReportsWindow.build_attachment_text().
+- -вложение -> удаляет последнюю строку, начинающуюся с attachment:.
+
+Как раздел отдает данные:
+- ReportSectionWidget.get_section_data() возвращает ReportSectionData.
+- content_changed сигналит в ReportsWindow.refresh_live_state().
+
+Зависимости раздела:
+- ReportSectionWidget -> MenuCatalog -> menu_catalog.json.
+- ReportSectionWidget -> MenuFormatter.
+- ReportSectionWidget -> MenuBuilder.
+- ReportSectionWidget -> ReportsWindow.build_attachment_text().
+- ReportSectionWidget -> ReportsWindow.build_tax_reference_menu_prefix().
+- ReportSectionWidget -> FlowLayout, ResizablePlainTextEdit, IssueTypeSegmentedControl.
+
+4. Вложенные tabmenu в секциях
+
+Данные всех режимов и вложенных вкладок лежат в:
+- mod/reports/data/menu_catalog.json.
+
+Загрузчик:
+- mod/reports/data/menu_catalog.py -> MenuCatalog.
+
+Построитель меню:
+- mod/reports/ui/menu_builder.py -> MenuBuilder.
+
+Форматирование вставляемых строк:
+- mod/reports/core/menu_formatter.py -> MenuFormatter.
+
+Список корневых режимов из menu_catalog.json:
+- книга записи на прием.
+- Пациенты.
+- Практика.
+- Маркетинг.
+- Страхование.
+- Настройки.
+- Лаборатории.
+
+Соответствие индекса mode-кнопки и builder-метода:
+- 0 -> _build_appointment_menu().
+- 1 -> _build_patient_menu().
+- 2 -> _build_practice_menu().
+- 3 -> _build_marketing_menu().
+- 4 -> _build_insurance_menu().
+- 5 -> _build_settings_menu().
+- 6 -> _build_laboratories_menu().
+
+Общее поведение split-строк меню:
+- Левая часть строки сразу вставляет строку текущего уровня.
+- Правая стрелка открывает дочернее меню.
+- При выборе конечного пункта строка вставляется в текущий QPlainTextEdit.
+
+5. Форматы вставок из tabmenu
+
+Прямой клик по mode-кнопке:
+- 'режим' - '<имя режима>'
+
+Меню режима:
+- 'режим' - tabmenu 'Режимы' - '<пункт>'
+
+Книга записи на прием:
+- 'режим' - 'книга записи на прием' - tabmenu '<меню>'
+- 'режим' - 'книга записи на прием' - tabmenu '<меню>' - '<пункт>'
+
+Пациенты:
+- 'режим' - 'Пациенты' - '<раздел>'
+- 'режим' - 'Пациенты' - '<раздел>' - tabmenu '<вкладка>'
+- 'режим' - 'Пациенты' - '<раздел>' - tabmenu '<вкладка>' - '<пункт>'
+
+Практика:
+- 'режим' - 'Практика' - '<раздел>'
+- 'режим' - 'Практика' - '<раздел>' - '<прямой пункт>'
+- 'режим' - 'Практика' - '<раздел>' - tabmenu '<вкладка>'
+- 'режим' - 'Практика' - '<раздел>' - tabmenu '<вкладка>' - '<пункт>'
+
+Маркетинг:
+- 'режим' - 'Маркетинг' - '<раздел>'
+- 'режим' - 'Маркетинг' - '<раздел>' - tabmenu '<вкладка>'
+- 'режим' - 'Маркетинг' - '<раздел>' - tabmenu '<вкладка>' - '<пункт>'
+
+Страхование:
+- 'режим' - 'Страхование' - '<раздел>'
+- 'режим' - 'Страхование' - '<раздел>' - tabmenu '<вкладка>'
+- 'режим' - 'Страхование' - '<раздел>' - tabmenu '<вкладка>' - '<пункт>'
+
+Настройки:
+- 'режим' - 'Настройки' - '<раздел>'
+- 'режим' - 'Настройки' - '<раздел>' - tabmenu '<вкладка>'
+- 'режим' - 'Настройки' - '<раздел>' - tabmenu '<вкладка>' - '<пункт>'
+
+Лаборатории:
+- 'режим' - 'Лаборатории' - '<раздел>'
+- 'режим' - 'Лаборатории' - '<раздел>' - tabmenu '<вкладка>'
+- 'режим' - 'Лаборатории' - '<раздел>' - tabmenu '<вкладка>' - '<пункт>'
+
+Справка ФНС:
+- '<Tax Referens из поля или Tax Reference>' - tabmenu 'Документы' - '<часть пути>'
+- '<Tax Referens из поля или Tax Reference>' - tabmenu 'Документы' - '<часть пути>' - '<следующая часть>' ...
+
+6. Фактические группы вкладок из menu_catalog.json
+
+Пациенты:
+- Курс лечения: Поиск/Просмотр, Лечение, Операции, Состояния, Тех. работы, Счета, Правка, Окна, Помощь.
+- Общ.сведения: Режимы, Поиск/Просмотр, Пациенты.
+- Карта зубов: Поиск/Просмотр, Карта, Состояния.
+- Пародонт: Поиск/Просмотр, Карта.
+- План лечения: Режимы, Поиск/Просмотр, План лечения, Операции, Тех. работы, Состояния, Счета, Правка, Окна, Помощь.
+- Счета: Режимы, Поиск/Просмотр, Счета, Отчеты, Правка, Окна, Помощь.
+- Квитанции: Режимы, Поиск/Просмотр, Платежи, Отчеты, Окна, Помощь.
+- Письма: Режимы, Поиск/Просмотр, Документы, Отчёты, Шаблоны, Правка, Окна, Помощь.
+- Амбул.карта: Режимы, Поиск/Просмотр, Амбул.Карта, Правка, Окна, Помощь.
+- Документы: Режимы, Поиск/Просмотр, Документы, Окна, Помощь.
+
+Практика:
+- Врачи: Функции.
+- Персонал: Функции.
+- Банк.счета: Функции.
+- Выручка: Выручка, Отчеты.
+- Отчеты: Функции.
+- Бонусная система: Функции.
+
+Маркетинг:
+- Запросы: Запросы.
+- Должники: Должники, Опции.
+- Коммуникации: Поиск/Просмотр, Коммуникации, Отчеты.
+- Потенциальные пациенты: Потенциальные пациенты.
+- Сделки: Поиск/Просмотр, Сделки.
+
+Страхование:
+- Сводные счета: Счета.
+- Платежи: Счета.
+- Сторонние организации: Функции.
+
+Настройки:
+- Практика: Функции.
+- Параметры: Функции.
+- Доступ: Функции.
+- Заболевания: Функции.
+- Заметки: Функции.
+- Материалы: Функции.
+- Процедуры: Функции.
+
+Лаборатории:
+- Лаборатории: Функции.
+- Персонал: Функции.
+
+7. Особенности каталога меню
+
+Книга записи на прием:
+- Использует appointment.menu_names и appointment.items.
+- У этого режима нет отдельного словаря tabs.
+- Каждый menu_name становится tabmenu.
+
+Пациенты:
+- patient.menu_names задает верхний список разделов.
+- patient.tabs задает разделы, у которых есть вложенные вкладки.
+- patient.nested_items задает пункты внутри пары раздел + вкладка.
+- patient.submenu_items задает пункты для разделов без вложенных tabs.
+- patient.tab_mapping используется для форматирования разделов без tabs.
+- search_view_items автоматически добавляются в каждый patient.submenu_items после удаления финальной "Отмена".
+
+Практика:
+- practice.items задает прямые пункты раздела.
+- practice.tabs задает вкладки внутри раздела.
+- practice.nested_items задает пункты внутри пары раздел + вкладка.
+- Если у раздела есть и direct_items, и tabs, MenuBuilder ставит separator между ними.
+
+Маркетинг, Страхование, Настройки, Лаборатории:
+- Работают через общий шаблон _build_simple_tabbed_menu().
+- Если для раздела есть tabs, клик по разделу вставляет строку раздела, стрелка открывает вкладки.
+- Если tabs нет, раздел является конечным пунктом.
+
+8. Справка ФНС и Tax Referens
+
+Кнопка:
+- Добавляется рядом с mode-кнопками в Pre-Condition и Scenario.
+- Название берется из constants.tax_reference_button_name: Справка ФНС.
+
+Данные:
+- menu_catalog.json -> tax_reference_entries.
+- constants.tax_reference_menu_name: Документы.
+- constants.tax_reference_system_name: Tax Reference.
+
+Префикс:
+- ReportsWindow.build_tax_reference_menu_prefix() возвращает текст поля Tax Referens.
+- Если поле пустое, MenuFormatter использует Tax Reference.
+
+Поведение:
+- Клик по главной строке справки вставляет только первый элемент path.
+- Стрелка открывает дочернее меню с пунктом "Просмотр".
+- "Просмотр" вставляет полный path.
+
+9. Сборка итогового TXT
+
+Основной класс:
+- mod/reports/core/report_builder.py -> TextReportBuilder.
+
+Вход:
+- ReportMetadata из collect_metadata().
+- list[ReportSectionData] из collect_sections().
+
+Порядок верхних строк:
+- Build <build>.
+- BD - <database>.
+- SQL - <sql_value>, если include_sql true.
+- DOC - <doc_value>, если include_doc true.
+- Tax Referens - <tax_reference_value>, если include_tax_reference true.
+
+SIR:
+- Не пишется отдельной строкой в тело отчета.
+- Используется в имени файла при save().
+- Используется в attachment-строках.
+
+Обычный раздел:
+- # <number> - <title>
+- Pre-Condition:
+- строки precondition
+- Scenario:
+- строки scenario
+- <Error или Question>: <issue_text>
+
+Текстовый раздел:
+- Если issue_type == "Текст", выводится только issue_text.
+- Номер, заголовок, Pre-Condition и Scenario для такого блока не выводятся.
+
+Пустой раздел:
+- Не попадает в итоговый TXT.
+
+Имя файла:
+- TextReportBuilder.save() пишет в output_dir файл формата YYYY-MM-DD_HH-MM-<SIR>.txt.
+- Недопустимые символы в SIR заменяются на "_".
+
+10. Открытие сохраненного отчета
+
+Кнопка:
+- "Открыть отчет" -> ReportsWindow.select_report_file().
+
+Поток:
+- QFileDialog выбирает TXT из текущей папки сохранения.
+- ReportsWindow.load_report_from_file(filepath).
+- TextReportParser.parse_file(filepath).
+- TextReportParser.extract_sir_from_filename(filepath).
+- TextReportParser.parse_content(content, sir).
+- ReportsWindow.apply_loaded_report(metadata, sections).
+
+Что восстанавливается:
+- Build, BD, SIR, SQL, DOC, Tax Referens.
+- Флаги include_sql, include_doc, include_tax_reference.
+- Разделы, номера, заголовки, precondition, scenario, issue_type, issue_text.
+- Исполнитель пытается восстановиться из attachment вида attachment:<SIR>_<performer>_<NN>.jpg.
+
+После открытия:
+- Секции подгоняются под количество из файла.
+- attachment-счетчики сбрасываются и синхронизируются по тексту.
+- refresh_live_state() обновляет preview, прогресс и autosave.
+
+11. Attachment-зависимости
+
+Формат:
+- attachment:<SIR>_<Исполнитель>_<NN>.jpg
+
+Файлы:
+- mod/reports/core/attachment_counter.py.
+- mod/reports/ui/reports_window.py.
+- mod/reports/ui/section_widget.py.
+
+Логика:
+- ReportSectionWidget не генерирует attachment сам.
+- Он вызывает attachment_provider, переданный из ReportsWindow.
+- ReportsWindow.build_attachment_text() резервирует следующий номер.
+- ReportsWindow.preview_attachment_text() показывает следующий номер без резервирования.
+- find_max_attachment_index() ищет уже вставленные attachment во всех текстовых блоках секций.
+- Ключ счетчика: SIR и Исполнитель в casefold().
+
+Поведение при пустых полях:
+- Нет SIR -> attachment:
+- Есть SIR, но нет Исполнителя -> attachment:<SIR>
+- Есть оба поля -> attachment:<SIR>_<Исполнитель>_<NN>.jpg
+
+12. Autosave-кеш
+
+Путь:
+- ReportsWindow.get_session_cache_path().
+- По умолчанию reports/.report_builder_session_cache.json.
+
+Что сохраняется:
+- version.
+- updated_at.
+- metadata.
+- output_dir.
+- sections.
+- attachment_counters.
+
+Когда сохраняется:
+- refresh_live_state().
+- closeEvent().
+- save_report().
+
+Когда восстанавливается:
+- В __init__ после _build_ui(), _connect_live_updates() и add_section().
+
+Сброс:
+- reset_autosave_draft() удаляет cache и tmp, чистит поля, оставляет один раздел.
+
+13. Валидация и прогресс
+
+Файлы:
+- mod/reports/ui/reports_window.py.
+- mod/reports/dialogs/validation_issues.py.
+- mod/reports/utils/widget_helpers.py.
+
+Обязательные верхние поля:
+- Build.
+- BD.
+- SIR.
+- SQL, если чекбокс SQL включен.
+- DOC, если чекбокс DOC включен.
+- Tax Referens, если чекбокс Tax Referens включен.
+
+Обычный раздел требует:
+- номер ошибки числом;
+- название;
+- Pre-Condition;
+- Scenario;
+- issue_text.
+
+Текстовый раздел требует:
+- только issue_text.
+
+Attachment-валидация:
+- Любая строка с attachment: должна иметь значение после двоеточия.
+
+Сохранение:
+- Без SIR save_report() блокируется сразу.
+- Остальные проблемы показываются через ValidationIssuesDialog.
+- Перед сохранением обычных разделов дополнительно показывается подтверждение номеров ошибок.
+
+14. Стили, иконки и вспомогательные зависимости
+
+Стили:
+- styles/reports_window.qss.
+- Загружаются через get_project_root() в ReportsWindow._load_styles().
+
+Иконки:
+- mod/reports/utils/icons.py.
+- load_mode_icons() для 7 режимов.
+- load_tax_reference_icon() для Справка ФНС.
+- image/FNS.png используется для кнопки Справка ФНС.
+
+Виджеты:
+- FlowLayout - компактная раскладка кнопок.
+- ResizablePlainTextEdit - текстовые поля с авторазмером.
+- IssueTypeSegmentedControl - переключатель Error / Question / Текст.
+- SmoothScrollArea - плавная прокрутка.
+
+15. Что менять, если ChatGPT будет дорабатывать проект
+
+Добавить или изменить главную вкладку:
+- mod/reports/ui/reports_window.py.
+- styles/reports_window.qss.
+- tests/test_easysir_regression.py.
+
+Добавить новый корневой режим:
+- mod/reports/data/menu_catalog.json -> mode_names.
+- mod/reports/ui/menu_builder.py -> build_mode_menu() и builder-метод.
+- mod/reports/core/menu_formatter.py -> форматтер строк нового режима.
+- tests/test_report_menu_catalog.py.
+
+Изменить список вкладок или пунктов внутри режима:
+- Обычно достаточно mod/reports/data/menu_catalog.json.
+- Если меняется структура данных, дополнительно менять MenuCatalog и MenuBuilder.
+
+Изменить формат итогового TXT:
+- mod/reports/core/report_builder.py.
+- mod/reports/core/report_parser.py, чтобы открытие старых/новых отчетов не сломалось.
+- tests/test_easysir_regression.py.
+
+Изменить attachment-логику:
+- mod/reports/core/attachment_counter.py.
+- mod/reports/ui/reports_window.py.
+- mod/reports/ui/section_widget.py.
+- tests/test_easysir_regression.py.
+
+Изменить валидацию:
+- mod/reports/ui/reports_window.py -> collect_validation_issues(), calculate_completion(), save_report().
+- mod/reports/dialogs/validation_issues.py, если меняется диалог.
+
+16. Тесты, которые закрепляют поведение
+
+tests/test_easysir_regression.py:
+- Проверяет наличие двух главных вкладок.
+- Проверяет live preview.
+- Проверяет SQL, DOC, Tax Referens.
+- Проверяет Справку ФНС.
+- Проверяет attachment-счетчики.
+- Проверяет autosave-кеш.
+- Проверяет открытие сохраненного TXT.
+- Проверяет сохранение и валидацию.
+
+tests/test_report_menu_catalog.py:
+- Проверяет каталоги menu_catalog.json.
+- Проверяет вкладки Пациенты, Практика, Маркетинг, Страхование, Настройки, Лаборатории.
+- Проверяет форматирование строк tabmenu.
+
+17. Короткая схема потока данных
+
+Пользователь меняет поле или раздел:
+- QLineEdit/QPlainTextEdit/IssueTypeSegmentedControl
+- signal
+- ReportsWindow.refresh_live_state()
+- collect_metadata() + collect_sections()
+- TextReportBuilder.build_content()
+- preview_text.setPlainText()
+- calculate_completion()
+- save_session_cache()
+
+Пользователь вставляет пункт из tabmenu:
+- ReportSectionWidget mode button
+- MenuBuilder QMenu
+- MenuCatalog данные из menu_catalog.json
+- MenuFormatter строка
+- MenuBuilder._insert_line()
+- editor.textChanged
+- refresh_live_state()
+
+Пользователь сохраняет отчет:
+- save_report()
+- collect_metadata()
+- collect_validation_issues()
+- confirm_save_with_issues()
+- confirm_issue_numbers()
+- TextReportBuilder.save()
+- файл TXT в output_dir
+
+Пользователь открывает отчет:
+- select_report_file()
+- TextReportParser.parse_file()
+- apply_loaded_report()
+- _sync_attachment_counters_from_content()
+- refresh_live_state()

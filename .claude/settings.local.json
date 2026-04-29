@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -q)",
+      "PowerShell(& \"c:\\\\divan_api_tester\\\\.venv\\\\Scripts\\\\python.exe\" -m pytest \"c:\\\\divan_api_tester\\\\tests\\\\\" -q 2>&1)",
+      "PowerShell(Get-Command python -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command py -ErrorAction SilentlyContinue)",
+      "PowerShell(& \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -c \"import PyQt6; print\\('PyQt6 OK'\\)\" 2>&1)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -m pytest \"c:\\\\divan_api_tester\\\\tests\\\\\" -q 2>&1 | Select-Object -Last 60)",
+      "PowerShell(& \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -m pip install pytest pytest-qt 2>&1)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; Set-Location \"c:\\\\divan_api_tester\"; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -m pytest tests -q 2>&1 | Select-Object -Last 80)",
+      "Bash(git -C c:/divan_api_tester status)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; Set-Location \"c:\\\\divan_api_tester\"; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -m pytest tests -q 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; Set-Location \"c:\\\\divan_api_tester\"; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -c \"from mod.reports.reports_window import ReportsWindow; print\\('OK'\\)\" 2>&1)",
+      "Bash(git -C c:/divan_api_tester add mod/reports/report_section_widget.py mod/reports/reports_window.py styles/reports_window.qss)",
+      "Bash(git -C c:/divan_api_tester commit -m ' *)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; Set-Location \"c:\\\\divan_api_tester\"; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -m pytest tests -q 2>&1 | Select-Object -Last 10)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; Set-Location \"c:\\\\divan_api_tester\"; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" _extract_menu_catalog.py 2>&1)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; Set-Location \"c:\\\\divan_api_tester\"; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -m pytest tests -q 2>&1 | Select-Object -Last 15)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; Set-Location \"c:\\\\divan_api_tester\"; & \"C:\\\\Users\\\\drozd\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python314\\\\python.exe\" -c \"from main import main; from mod.reports import ReportsWindow, ReportSectionWidget, TextReportBuilder, TextReportParser, ReportMetadata, ReportSectionData; print\\('Public API: OK'\\)\" 2>&1)",
+      "Bash(git -C c:/divan_api_tester add mod/reports/__init__.py mod/reports/flow_layout.py mod/reports/report_menu_catalog.py mod/reports/report_section_widget.py mod/reports/report_utils.py mod/reports/reports_window.py mod/reports/text_report_builder.py mod/reports/core/ mod/reports/data/ mod/reports/dialogs/ mod/reports/ui/ mod/reports/utils/ mod/reports/widgets/)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

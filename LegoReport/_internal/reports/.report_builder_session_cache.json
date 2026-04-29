@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "updated_at": "2026-04-28T16:16:50",
+  "metadata": {
+    "build": "6332",
+    "database": "Test",
+    "sir": "40811",
+    "performer": "IM",
+    "include_sql": false,
+    "sql_value": "",
+    "include_doc": true,
+    "doc_value": "Check a visit to the same specialist v 1 5.doc",
+    "include_tax_reference": false,
+    "tax_reference_value": ""
+  },
+  "output_dir": "C:\\divan_api_tester\\LegoReport\\_internal\\reports\\text_reports",
+  "sections": [
+    {
+      "number": "22",
+      "title": "",
+      "precondition": "",
+      "scenario": "",
+      "issue_type": "Error",
+      "issue_text": ""
+    }
+  ],
+  "attachment_counters": []
+}
