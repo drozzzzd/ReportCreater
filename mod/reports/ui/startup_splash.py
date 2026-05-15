@@ -1,7 +1,7 @@
 """Full-window startup veil with a soft fade-out."""
 from __future__ import annotations
 
-from PyQt6.QtCore import QEvent, QEasingCurve, QPropertyAnimation, Qt
+from PyQt6.QtCore import QEvent, QEasingCurve, QPropertyAnimation, QSize, Qt
 from PyQt6.QtGui import QColor, QLinearGradient, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QGraphicsOpacityEffect, QWidget
 
@@ -15,6 +15,7 @@ class StartupVeilOverlay(QWidget):
         self._pixmap = QPixmap(image_path)
         if self._pixmap.isNull():
             self._pixmap = _fallback_pixmap()
+        self._blurred_background = QPixmap()
 
         self._opacity_effect = QGraphicsOpacityEffect(self)
         self._opacity_effect.setOpacity(1.0)
@@ -32,6 +33,7 @@ class StartupVeilOverlay(QWidget):
 
     def show_over_parent(self) -> None:
         self.cover_parent()
+        self._capture_blurred_background()
         self.show()
         self.raise_()
         self.update()
@@ -60,13 +62,16 @@ class StartupVeilOverlay(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
+        if not self._blurred_background.isNull():
+            painter.drawPixmap(self.rect(), self._blurred_background)
+
         overlay = QLinearGradient(0, 0, 0, max(self.height(), 1))
-        overlay.setColorAt(0.0, QColor(248, 250, 255, 232))
-        overlay.setColorAt(0.45, QColor(243, 247, 253, 214))
-        overlay.setColorAt(1.0, QColor(236, 242, 251, 226))
+        overlay.setColorAt(0.0, QColor(248, 250, 255, 188))
+        overlay.setColorAt(0.45, QColor(243, 247, 253, 168))
+        overlay.setColorAt(1.0, QColor(236, 242, 251, 184))
         painter.fillRect(self.rect(), overlay)
 
-        painter.setPen(QPen(QColor(255, 255, 255, 120), 1))
+        painter.setPen(QPen(QColor(255, 255, 255, 150), 1))
         painter.drawRoundedRect(self.rect().adjusted(8, 8, -8, -8), 18, 18)
 
         max_width = max(320, int(self.width() * 0.72))
@@ -84,6 +89,37 @@ class StartupVeilOverlay(QWidget):
     def _finish_fade(self) -> None:
         self.hide()
         self.deleteLater()
+
+    def _capture_blurred_background(self) -> None:
+        parent = self.parentWidget()
+        if parent is None:
+            return
+
+        was_visible = self.isVisible()
+        if was_visible:
+            self.hide()
+        source = parent.grab()
+        if was_visible:
+            self.show()
+        if source.isNull():
+            self._blurred_background = QPixmap()
+            return
+
+        small_size = QSize(max(1, int(source.width() * 0.075)), max(1, int(source.height() * 0.075)))
+        if small_size.width() < 1 or small_size.height() < 1:
+            self._blurred_background = source
+            return
+
+        small = source.scaled(
+            small_size,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self._blurred_background = small.scaled(
+            source.size(),
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
 
 
 def _fallback_pixmap() -> QPixmap:

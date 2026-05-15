@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QTextOption
-from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QPushButton, QTabWidget
+from PyQt6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QPushButton, QTabWidget, QToolButton
 
 import main as app_main
 from mod.reports.report_section_widget import ResizablePlainTextEdit
@@ -50,9 +50,16 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         config = app_main.load_config()
         self.assertIn("general", config)
         self.assertIn("reports_dir", config["general"])
+        self.assertIn("default_theme", config["ui"])
 
     def test_window_starts_with_empty_main_fields_and_zero_progress(self):
         self.assertEqual(self.window.windowTitle(), "Конструктор отчетов")
+        self.assertTrue(self.window.windowFlags() & Qt.WindowType.FramelessWindowHint)
+        self.assertIsNotNone(self.window.window_shell)
+        self.assertIsNotNone(self.window.title_bar)
+        self.assertIsInstance(self.window.window_minimize_btn, QToolButton)
+        self.assertIsInstance(self.window.window_maximize_btn, QToolButton)
+        self.assertIsInstance(self.window.window_close_btn, QToolButton)
         self.assertEqual(len(self.window.sections), 1)
         self.assertGreaterEqual(self.window.width(), 980)
         self.assertIsNotNone(self.window.preview_shell)
@@ -86,6 +93,16 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
             self.window.preview_text.wordWrapMode(),
             QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere,
         )
+
+    def test_dark_theme_overrides_specific_builder_controls(self):
+        self.window.set_theme("dark")
+        stylesheet = self.window.styleSheet()
+
+        self.assertIn("QGroupBox#sectionEditorGroup", stylesheet)
+        self.assertIn("QGroupBox#sectionIssueGroup", stylesheet)
+        self.assertIn("QPlainTextEdit#previewEditor", stylesheet)
+        self.assertIn("QCheckBox", stylesheet)
+        self.assertIn("QPushButton#issueTypeSegmentButton", stylesheet)
 
     def test_section_editors_match_reference_density_and_resize(self):
         section = self.window.sections[0]

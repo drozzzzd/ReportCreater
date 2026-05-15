@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 from ..core.menu_formatter import MenuFormatter
 from ..core.report_data import ReportSectionData
 from ..data.menu_catalog import MenuCatalog
+from ..utils.action_icons import make_action_icon
 from ..utils.icons import load_tax_reference_icon
 from ..utils.widget_helpers import install_clearable_context_menu, set_invalid_state
 from ..widgets.flow_layout import FlowLayout
@@ -93,6 +94,8 @@ class ReportSectionWidget(QFrame):
         self.remove_btn = QPushButton("Удалить")
         self.remove_btn.setProperty("buttonType", "secondary")
         self.remove_btn.setProperty("buttonRole", "danger")
+        self.remove_btn.setIcon(make_action_icon("trash"))
+        self.remove_btn.setIconSize(QSize(15, 15))
         self.remove_btn.clicked.connect(lambda: self.remove_requested.emit(self))
         self.header_layout.addWidget(self.remove_btn)
         self.root_layout.addLayout(self.header_layout)
@@ -164,13 +167,15 @@ class ReportSectionWidget(QFrame):
 
     def _create_helpers_row(self, editor: QPlainTextEdit) -> FlowLayout:
         row = FlowLayout(spacing=6)
-        for label, action in [
-            ("Rus", lambda: self._insert_text(editor, "' '")),
-            ("Прочерк", lambda: self._insert_text(editor, " - ")),
-            ("Вложение", lambda: self._insert_attachment(editor)),
-            ("-вложение", lambda: self._remove_last_attachment(editor)),
+        for label, icon_name, action in [
+            ("Rus", "quote", lambda: self._insert_text(editor, "' '")),
+            ("Прочерк", "dash", lambda: self._insert_text(editor, " - ")),
+            ("Вложение", "attachment", lambda: self._insert_attachment(editor)),
+            ("-вложение", "attachment-remove", lambda: self._remove_last_attachment(editor)),
         ]:
             button = self._create_small_button(label, action)
+            button.setIcon(make_action_icon(icon_name))
+            button.setIconSize(QSize(14, 14))
             row.addWidget(button)
             self.helper_buttons.append(button)
         return row

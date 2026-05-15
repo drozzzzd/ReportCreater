@@ -1,2 +1,20 @@
 # Local generated reports and draft autosave data.
 /reports/
+
+# Python and test caches.
+__pycache__/
+*.py[cod]
+/.pytest_cache/
+/.tmp_test/
+
+# Local virtual environments and PyInstaller intermediate output.
+/.venv/
+/venv/
+/build_env/
+/build/
+
+# Old unpacked release bundle; current release output is dist/ReportCreater.
+/LegoReport/
+
+# Local screenshots and ad-hoc UI captures.
+/image/Screenshot_*.png

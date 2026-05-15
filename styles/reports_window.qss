@@ -1,6 +1,54 @@
 ReportsWindow {
-    background-color: #FBFCFF;
+    background-color: transparent;
     color: #273044;
+}
+
+QFrame#windowShell {
+    background-color: #FBFCFF;
+    border: 1px solid #DDE3EC;
+    border-radius: 12px;
+}
+
+QFrame#appTitleBar {
+    background-color: #FFFFFF;
+    border: none;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom: 1px solid #E5E8EF;
+}
+
+QLabel#appTitleLabel {
+    color: #172033;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+QToolButton#windowControlButton,
+QToolButton#windowCloseButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 0;
+}
+
+QToolButton#windowControlButton:hover {
+    background-color: #EEF3FA;
+}
+
+QToolButton#windowControlButton:pressed {
+    background-color: #E4ECF7;
+}
+
+QToolButton#windowCloseButton:hover {
+    background-color: #FEE2E2;
+}
+
+QToolButton#windowCloseButton:pressed {
+    background-color: #FECACA;
+}
+
+QSizeGrip#windowSizeGrip {
+    background-color: transparent;
 }
 
 QWidget#setupTab,
@@ -77,6 +125,12 @@ QToolButton#themeToggleButton:hover {
     border-color: #C9D3E1;
 }
 
+QToolButton#settingsButton:pressed,
+QToolButton#themeToggleButton:pressed {
+    background-color: #EDF2F8;
+    border-color: #B9C6D8;
+}
+
 QDialog#settingsDialog {
     background-color: #FBFCFF;
     color: #273044;
@@ -117,11 +171,11 @@ QListWidget#reportHistoryList::item:selected {
 QPushButton {
     background-color: #FFFFFF;
     border: 1px solid #DDE3EC;
-    border-radius: 7px;
+    border-radius: 8px;
     color: #273044;
     font-size: 13px;
-    font-weight: 500;
-    padding: 0 12px;
+    font-weight: 600;
+    padding: 0 13px;
 }
 
 QPushButton:hover {
@@ -131,14 +185,25 @@ QPushButton:hover {
 
 QPushButton:pressed {
     background-color: #EDF2F8;
+    border-color: #B9C6D8;
+}
+
+QPushButton:focus {
+    border-color: #2F6FEA;
+}
+
+QPushButton:disabled {
+    background-color: #F3F5F8;
+    border-color: #E1E6EF;
+    color: #A3ACBA;
 }
 
 QPushButton#primaryBtn,
 QPushButton#saveBtn {
     background-color: #2F6FEA;
     color: #FFFFFF;
-    border-color: #2F6FEA;
-    font-weight: 600;
+    border-color: #2B66DC;
+    font-weight: 700;
 }
 
 QPushButton#primaryBtn:hover,
@@ -188,6 +253,11 @@ QPushButton[small="true"] {
 QPushButton[small="true"]:hover {
     color: #273044;
     background-color: #F7F9FC;
+}
+
+QPushButton[small="true"]:pressed {
+    background-color: #EDF2F8;
+    border-color: #C9D3E1;
 }
 
 QPushButton#browseBtn {
@@ -289,6 +359,7 @@ QLineEdit:hover {
 
 QLineEdit:focus {
     border: 1px solid #2F6FEA;
+    background-color: #FFFFFF;
 }
 
 QLineEdit[readOnly="true"] {
@@ -329,6 +400,7 @@ QPlainTextEdit:hover {
 
 QPlainTextEdit:focus {
     border: 1px solid #2F6FEA;
+    background-color: #FFFFFF;
 }
 
 QPlainTextEdit#previewEditor {
@@ -356,6 +428,11 @@ QToolButton#modeButton:hover {
     border-color: #C9D3E1;
 }
 
+QToolButton#modeButton:pressed {
+    background-color: #EDF2F8;
+    border-color: #B9C6D8;
+}
+
 QToolButton#modeButton::menu-button {
     background-color: transparent;
     border-left: 1px solid #DDE3EC;
@@ -366,6 +443,10 @@ QToolButton#modeButton::menu-button {
 
 QToolButton#modeButton::menu-button:hover {
     background-color: #EEF3FA;
+}
+
+QToolButton#modeButton::menu-button:pressed {
+    background-color: #E6EEF9;
 }
 
 QToolButton#modeButton::menu-arrow {
@@ -413,6 +494,12 @@ QToolButton#menuSplitArrowButton:hover {
     background-color: #F7F9FC;
 }
 
+QPushButton#menuItemButton:pressed,
+QPushButton#menuSplitMainButton:pressed,
+QToolButton#menuSplitArrowButton:pressed {
+    background-color: #EDF2F8;
+}
+
 QPushButton#menuSplitMainButton {
     border-right: 1px solid #E1E6EF;
 }
@@ -422,6 +509,7 @@ QToolButton#menuSplitArrowButton {
     color: #697386;
     font-size: 12px;
     font-weight: 700;
+    padding: 0;
 }
 
 QGroupBox {
@@ -531,6 +619,10 @@ QCheckBox::indicator:hover {
 QCheckBox::indicator:checked {
     background-color: #2F6FEA;
     border-color: #2F6FEA;
+}
+
+QCheckBox::indicator:checked:hover {
+    border-color: #255FD4;
 }
 
 QFrame#previewWindowBar {

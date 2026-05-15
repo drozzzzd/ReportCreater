@@ -5,7 +5,15 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('styles', 'styles'), ('image', 'image'), ('config.json', '.'), ('mod\\reports\\data\\menu_catalog.json', 'mod\\reports\\data')],
+    datas=[
+        ('styles', 'styles'),
+        ('image\\FNS.png', 'image'),
+        ('image\\app_icon.ico', 'image'),
+        ('image\\app_icon.png', 'image'),
+        ('image\\splash.png', 'image'),
+        ('config.json', '.'),
+        ('mod\\reports\\data\\menu_catalog.json', 'mod\\reports\\data'),
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -33,6 +41,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='image\\app_icon.ico',
+    version='version_info.txt',
 )
 coll = COLLECT(
     exe,

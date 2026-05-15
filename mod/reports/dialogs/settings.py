@@ -1,7 +1,7 @@
 """Application settings dialog."""
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -14,6 +14,8 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
 )
+
+from ..utils.app_assets import apply_windows_dark_frame
 
 
 class SettingsDialog(QDialog):
@@ -49,7 +51,7 @@ class SettingsDialog(QDialog):
         theme = str(settings.get("theme", "light"))
         index = self.theme_combo.findData(theme)
         self.theme_combo.setCurrentIndex(max(index, 0))
-        form.addRow("Тема:", self.theme_combo)
+        form.addRow("Тема по умолчанию:", self.theme_combo)
 
         self.performer_input = QLineEdit(str(settings.get("default_performer", "")))
         self.performer_input.setPlaceholderText("Например QA")
@@ -95,10 +97,14 @@ class SettingsDialog(QDialog):
 
     def _select_output_dir(self) -> None:
         dialog = QFileDialog(self, "Выберите папку для сохранения отчетов")
+        dialog.setStyleSheet(self.styleSheet())
         dialog.setFileMode(QFileDialog.FileMode.Directory)
         dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
         dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
         dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+        dark = getattr(self.parent(), "_current_theme", "light") == "dark"
+        apply_windows_dark_frame(dialog, dark)
+        QTimer.singleShot(0, lambda: apply_windows_dark_frame(dialog, dark))
         if dialog.exec() == QDialog.DialogCode.Accepted:
             selected = dialog.selectedFiles()
             if selected:

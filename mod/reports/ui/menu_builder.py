@@ -5,7 +5,7 @@
 """
 from collections.abc import Callable
 
-from PyQt6.QtCore import QPoint, Qt
+from PyQt6.QtCore import QPoint, QSize, Qt
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QMenu,
@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 
 from ..core.menu_formatter import MenuFormatter
 from ..data.menu_catalog import MenuCatalog
+from ..utils.action_icons import make_action_icon
 
 
 class MenuBuilder:
@@ -458,7 +459,9 @@ class MenuBuilder:
 
         arrow_button = QToolButton()
         arrow_button.setObjectName("menuSplitArrowButton")
-        arrow_button.setText(">")
+        arrow_button.setText("")
+        arrow_button.setIcon(make_action_icon("chevron-right"))
+        arrow_button.setIconSize(QSize(13, 13))
         arrow_button.setAutoRaise(False)
         arrow_button.setCursor(Qt.CursorShape.PointingHandCursor)
         arrow_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)

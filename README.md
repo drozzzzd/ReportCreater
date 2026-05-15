@@ -58,3 +58,11 @@ python main.py
 ```bash
 python -B -m unittest discover -s tests -v
 ```
+
+## Сборка релиза
+
+```bash
+pyinstaller --clean --noconfirm ReportCreater.spec
+```
+
+Релизная сборка подтягивает `styles`, нужные файлы из `image`, `config.json`, каталог меню и Windows-метаданные из `version_info.txt`.

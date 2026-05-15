@@ -5,7 +5,7 @@ import json
 import os
 from datetime import datetime
 
-from PyQt6.QtCore import QRectF, QSize, Qt
+from PyQt6.QtCore import QEvent, QPoint, QRectF, QSize, Qt, QTimer
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QTextOption
 from PyQt6.QtWidgets import (
     QApplication,
@@ -25,10 +25,11 @@ from PyQt6.QtWidgets import (
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QSizeGrip,
     QSizePolicy,
     QSplitter,
     QSpacerItem,
-    QStyle,
+    QSystemTrayIcon,
     QTabWidget,
     QToolButton,
     QVBoxLayout,
@@ -48,10 +49,16 @@ from ..core.report_parser import TextReportParser
 from ..core.report_store import ReportStore
 from ..dialogs.settings import SettingsDialog
 from ..dialogs.validation_issues import ValidationIssuesDialog
-from ..utils.app_assets import apply_windows_dark_frame
+from ..utils.app_assets import apply_windows_dark_frame, load_app_icon
+from ..utils.action_icons import make_action_icon
 from ..utils.icons import load_mode_icons
-from ..utils.paths import get_project_root
-from ..utils.widget_helpers import install_clearable_context_menu, set_invalid_state
+from ..utils.paths import get_project_root, get_writable_app_root
+from ..utils.widget_helpers import (
+    apply_soft_shadow,
+    install_clearable_context_menu,
+    install_press_feedback,
+    set_invalid_state,
+)
 from ..widgets.smooth_scroll_area import SmoothScrollArea
 from .section_widget import ReportSectionWidget
 
@@ -61,8 +68,53 @@ ReportsWindow,
 QDialog,
 QFileDialog,
 QMessageBox {
-    background-color: #171B22;
     color: #F4F7FB;
+}
+
+ReportsWindow {
+    background-color: transparent;
+}
+
+QDialog,
+QFileDialog,
+QMessageBox {
+    background-color: #171B22;
+}
+
+QFrame#windowShell {
+    background-color: #171B22;
+    border-color: #323B4D;
+}
+
+QFrame#appTitleBar {
+    background-color: #11161E;
+    border-bottom-color: #2A3140;
+}
+
+QLabel#appTitleLabel {
+    color: #F4F7FB;
+}
+
+QToolButton#windowControlButton,
+QToolButton#windowCloseButton {
+    background-color: transparent;
+    border: none;
+}
+
+QToolButton#windowControlButton:hover {
+    background-color: #252C3A;
+}
+
+QToolButton#windowControlButton:pressed {
+    background-color: #1C2230;
+}
+
+QToolButton#windowCloseButton:hover {
+    background-color: #7F1D1D;
+}
+
+QToolButton#windowCloseButton:pressed {
+    background-color: #991B1B;
 }
 
 ReportsWindow QWidget#setupTab,
@@ -92,6 +144,8 @@ QTabWidget#mainTabs QTabBar::tab:selected {
 }
 
 QFrame#heroPanel,
+QDialog#settingsDialog,
+QDialog#settingsDialog QWidget,
 QFrame#metaGroup,
 QFrame#previewShell,
 QFrame#progressShell,
@@ -138,6 +192,19 @@ QListWidget {
     selection-color: #FFFFFF;
 }
 
+QComboBox::drop-down {
+    border-left: 1px solid #394356;
+    width: 24px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #202633;
+    border: 1px solid #3A4558;
+    color: #F4F7FB;
+    selection-background-color: #2F6FEA;
+    selection-color: #FFFFFF;
+}
+
 QLineEdit:hover,
 QPlainTextEdit:hover,
 QComboBox:hover {
@@ -148,6 +215,7 @@ QLineEdit:focus,
 QPlainTextEdit:focus,
 QComboBox:focus {
     border-color: #6EA2FF;
+    background-color: #12161D;
 }
 
 QLineEdit[readOnly="true"] {
@@ -170,6 +238,24 @@ QToolButton#settingsButton:hover,
 QToolButton#themeToggleButton:hover {
     background-color: #2C3546;
     border-color: #4B5A72;
+}
+
+QPushButton:pressed,
+QToolButton#modeButton:pressed,
+QToolButton#settingsButton:pressed,
+QToolButton#themeToggleButton:pressed {
+    background-color: #1C2230;
+    border-color: #526077;
+}
+
+QPushButton:focus {
+    border-color: #6EA2FF;
+}
+
+QPushButton:disabled {
+    background-color: #1C2230;
+    border-color: #323B4D;
+    color: #748199;
 }
 
 QPushButton[buttonType="secondary"],
@@ -208,6 +294,120 @@ QScrollBar::handle:vertical {
 
 QLabel#settingsDialogTitle {
     color: #FFFFFF;
+}
+
+QGroupBox#sectionEditorGroup,
+QGroupBox#sectionIssueGroup {
+    background-color: #202633;
+    border: 1px solid #323B4D;
+    color: #F4F7FB;
+}
+
+QGroupBox#sectionEditorGroup::title,
+QGroupBox#sectionIssueGroup::title {
+    background-color: #202633;
+    color: #DDE6F5;
+}
+
+QGroupBox#progressPanel {
+    background-color: transparent;
+    border: none;
+    color: #F4F7FB;
+}
+
+QGroupBox#progressPanel::title {
+    background-color: transparent;
+    color: #F4F7FB;
+}
+
+QLineEdit#sectionNumberInput,
+QLineEdit#sectionTitleInput,
+QPlainTextEdit#previewEditor {
+    background-color: #12161D;
+    border-color: #394356;
+    color: #F7FAFF;
+}
+
+QLineEdit#sectionNumberInput:focus,
+QLineEdit#sectionTitleInput:focus,
+QPlainTextEdit#previewEditor:focus {
+    background-color: #12161D;
+    border-color: #6EA2FF;
+}
+
+QLineEdit[invalid="true"],
+QPlainTextEdit[invalid="true"] {
+    border: 1px solid #EF4444;
+}
+
+QCheckBox {
+    color: #F4F7FB;
+}
+
+QCheckBox:disabled {
+    color: #B7C2D4;
+}
+
+QCheckBox::indicator {
+    background-color: #12161D;
+    border-color: #4C5B73;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #2F6FEA;
+    border-color: #2F6FEA;
+}
+
+QWidget#issueTypeCombo,
+QWidget#menuSplitRow {
+    background-color: transparent;
+}
+
+QPushButton#issueTypeSegmentButton {
+    background-color: #202633;
+    border-color: #3A4558;
+    color: #B7C2D4;
+}
+
+QPushButton#issueTypeSegmentButton:hover {
+    background-color: #2C3546;
+    color: #F4F7FB;
+}
+
+QPushButton#issueTypeSegmentButton:checked {
+    background-color: #2F6FEA;
+    border-color: #2F6FEA;
+    color: #FFFFFF;
+}
+
+QToolButton#modeButton::menu-button {
+    border-left-color: #3A4558;
+}
+
+QMenu#splitDropdownMenu::separator {
+    background-color: #323B4D;
+}
+
+QPushButton#menuItemButton,
+QPushButton#menuSplitMainButton,
+QToolButton#menuSplitArrowButton {
+    background-color: transparent;
+    border: none;
+    color: #F4F7FB;
+}
+
+QPushButton#menuItemButton:hover,
+QPushButton#menuSplitMainButton:hover,
+QToolButton#menuSplitArrowButton:hover {
+    background-color: #2C3546;
+}
+
+QPushButton#menuSplitMainButton {
+    border-right: 1px solid #323B4D;
+}
+
+QToolButton#menuSplitArrowButton {
+    color: #B7C2D4;
 }
 
 QListWidget#reportHistoryList::item:hover,
@@ -264,6 +464,14 @@ class ReportsWindow(QWidget):
     def __init__(self, config: dict, config_path: str = "", parent=None):
         super().__init__(parent)
         self.setObjectName("ReportsWindow")
+        self.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowSystemMenuHint
+            | Qt.WindowType.WindowMinimizeButtonHint
+            | Qt.WindowType.WindowMaximizeButtonHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.config = config
         self.config_path = config_path
         self.mode_icons = load_mode_icons()
@@ -274,6 +482,9 @@ class ReportsWindow(QWidget):
         self._hero_collapsed = False
         self._meta_collapsed = False
         self._session_cache_enabled = False
+        self._window_control_buttons: set[QWidget] = set()
+        self._title_drag_widgets: set[QWidget] = set()
+        self._drag_start_position: QPoint | None = None
         self._session_cache_path = self.get_session_cache_path()
         self._report_store = ReportStore(self.get_report_store_path())
         self._user_settings = self._load_user_settings()
@@ -313,11 +524,19 @@ class ReportsWindow(QWidget):
         self.setProperty("theme", self._current_theme)
         self.setStyleSheet(self._compose_stylesheet())
         self._apply_theme_palette()
-        apply_windows_dark_frame(self, self._current_theme == "dark")
+        self._sync_native_frame(self)
 
         if hasattr(self, "theme_toggle_btn"):
-            self.theme_toggle_btn.setText("☀" if self._current_theme == "dark" else "☾")
+            self.theme_toggle_btn.setText("")
+            self.theme_toggle_btn.setIcon(
+                make_action_icon("sun" if self._current_theme == "dark" else "moon", self._current_theme)
+            )
             self.theme_toggle_btn.setToolTip("Переключить на светлую тему" if self._current_theme == "dark" else "Переключить на темную тему")
+        if hasattr(self, "settings_btn"):
+            self.settings_btn.setIcon(make_action_icon("settings", self._current_theme))
+        if hasattr(self, "window_minimize_btn"):
+            self._refresh_window_controls()
+        self._refresh_action_icons()
 
     def _apply_theme_palette(self) -> None:
         app = QApplication.instance()
@@ -340,6 +559,46 @@ class ReportsWindow(QWidget):
             palette = app.style().standardPalette()
         app.setPalette(palette)
 
+    def _sync_native_frame(self, widget: QWidget) -> None:
+        if not widget.isVisible():
+            return
+        dark = self._current_theme == "dark"
+        apply_windows_dark_frame(widget, dark)
+        QTimer.singleShot(0, lambda target=widget, is_dark=dark: apply_windows_dark_frame(target, is_dark))
+        QTimer.singleShot(80, lambda target=widget, is_dark=dark: apply_windows_dark_frame(target, is_dark))
+
+    def _refresh_action_icons(self) -> None:
+        themed_buttons = {
+            "add_btn": "add",
+            "remove_last_btn": "remove",
+            "save_btn": "save",
+            "open_report_btn": "open",
+            "open_file_btn": "file-open",
+            "reset_cache_btn": "reset",
+            "settings_btn": "settings",
+        }
+        for attr_name, icon_name in themed_buttons.items():
+            button = getattr(self, attr_name, None)
+            if button is not None:
+                button.setIcon(make_action_icon(icon_name, self._current_theme))
+
+    def _toggle_window_maximized(self) -> None:
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+        self._refresh_window_controls()
+
+    def _refresh_window_controls(self) -> None:
+        if not hasattr(self, "window_minimize_btn"):
+            return
+        self.window_minimize_btn.setIcon(make_action_icon("window-minimize", self._current_theme))
+        self.window_maximize_btn.setIcon(
+            make_action_icon("window-restore" if self.isMaximized() else "window-maximize", self._current_theme)
+        )
+        self.window_close_btn.setIcon(make_action_icon("window-close", self._current_theme))
+        self.window_maximize_btn.setToolTip("Восстановить" if self.isMaximized() else "Развернуть")
+
     def _config_section(self, key: str) -> dict:
         section = self.config.setdefault(key, {})
         if not isinstance(section, dict):
@@ -350,8 +609,9 @@ class ReportsWindow(QWidget):
     def _load_user_settings(self) -> dict:
         ui_config = self._config_section("ui")
         preferences = self._config_section("preferences")
+        theme_value = ui_config.get("default_theme", ui_config.get("theme", "light"))
         return {
-            "theme": "dark" if str(ui_config.get("theme", "light")).lower() == "dark" else "light",
+            "theme": "dark" if str(theme_value).lower() == "dark" else "light",
             "default_performer": str(preferences.get("default_performer", "")).strip(),
             "default_output_dir": str(preferences.get("default_output_dir", "")).strip(),
             "remember_defaults": bool(preferences.get("remember_defaults", False)),
@@ -372,6 +632,7 @@ class ReportsWindow(QWidget):
     def set_theme(self, theme: str) -> None:
         self._user_settings["theme"] = "dark" if theme == "dark" else "light"
         self._config_section("ui")["theme"] = self._user_settings["theme"]
+        self._config_section("ui")["default_theme"] = self._user_settings["theme"]
         self._save_config()
         self._apply_theme(self._user_settings["theme"])
 
@@ -379,18 +640,107 @@ class ReportsWindow(QWidget):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
+        root.setContentsMargins(8, 8, 8, 8)
         root.setSpacing(0)
+
+        self.window_shell = QFrame()
+        self.window_shell.setObjectName("windowShell")
+        self.window_shell.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        root.addWidget(self.window_shell, 1)
+        self.size_grip = QSizeGrip(self.window_shell)
+        self.size_grip.setObjectName("windowSizeGrip")
+        self.size_grip.resize(18, 18)
+
+        shell_layout = QVBoxLayout(self.window_shell)
+        shell_layout.setContentsMargins(0, 0, 0, 0)
+        shell_layout.setSpacing(0)
+
+        self._build_window_titlebar(shell_layout)
 
         self.main_tabs = QTabWidget()
         self.main_tabs.setObjectName("mainTabs")
-        root.addWidget(self.main_tabs, 1)
+        shell_layout.addWidget(self.main_tabs, 1)
 
         self._build_setup_tab()
         self._build_fill_tab()
         self._build_tab_corner_actions()
         self.main_tabs.currentChanged.connect(self._sync_tab_corner_actions)
         self._update_responsive_layout(force=True)
+
+    def _build_window_titlebar(self, parent_layout: QVBoxLayout) -> None:
+        self.title_bar = QFrame()
+        self.title_bar.setObjectName("appTitleBar")
+        self.title_bar.setFixedHeight(38)
+        title_layout = QHBoxLayout(self.title_bar)
+        title_layout.setContentsMargins(12, 0, 6, 0)
+        title_layout.setSpacing(8)
+
+        icon_label = QLabel()
+        icon_label.setObjectName("appTitleIcon")
+        app_icon = load_app_icon()
+        if not app_icon.isNull():
+            icon_label.setPixmap(app_icon.pixmap(16, 16))
+        icon_label.setFixedSize(18, 18)
+
+        self.title_label = QLabel(self.windowTitle())
+        self.title_label.setObjectName("appTitleLabel")
+
+        title_layout.addWidget(icon_label)
+        title_layout.addWidget(self.title_label)
+        title_layout.addStretch(1)
+
+        self.window_minimize_btn = self._create_window_button("window-minimize", "Свернуть")
+        self.window_maximize_btn = self._create_window_button("window-maximize", "Развернуть")
+        self.window_close_btn = self._create_window_button("window-close", "Закрыть")
+        self.window_close_btn.setObjectName("windowCloseButton")
+
+        self.window_minimize_btn.clicked.connect(self.showMinimized)
+        self.window_maximize_btn.clicked.connect(self._toggle_window_maximized)
+        self.window_close_btn.clicked.connect(self.close)
+
+        title_layout.addWidget(self.window_minimize_btn)
+        title_layout.addWidget(self.window_maximize_btn)
+        title_layout.addWidget(self.window_close_btn)
+        parent_layout.addWidget(self.title_bar)
+        self._title_drag_widgets = {self.title_bar, icon_label, self.title_label}
+        for widget in self._title_drag_widgets:
+            widget.installEventFilter(self)
+        self._refresh_window_controls()
+
+    def _create_window_button(self, icon_name: str, tooltip: str) -> QToolButton:
+        button = QToolButton()
+        button.setObjectName("windowControlButton")
+        button.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        button.setAutoRaise(False)
+        button.setFixedSize(38, 30)
+        button.setIconSize(QSize(16, 16))
+        button.setToolTip(tooltip)
+        button.setIcon(make_action_icon(icon_name, self._current_theme))
+        self._window_control_buttons.add(button)
+        return button
+
+    def _polish_visible_controls(self) -> None:
+        widgets = [
+            getattr(self, "save_btn", None),
+            getattr(self, "open_report_btn", None),
+            getattr(self, "open_file_btn", None),
+            getattr(self, "reset_cache_btn", None),
+            getattr(self, "add_btn", None),
+            getattr(self, "remove_last_btn", None),
+            getattr(self, "theme_toggle_btn", None),
+            getattr(self, "settings_btn", None),
+            getattr(self, "window_minimize_btn", None),
+            getattr(self, "window_maximize_btn", None),
+            getattr(self, "window_close_btn", None),
+        ]
+        for widget in widgets:
+            if widget is None:
+                continue
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
+            widget.update()
+        if hasattr(self, "window_shell"):
+            self.window_shell.update()
 
     def _build_tab_corner_actions(self):
         self.tab_actions = QFrame()
@@ -401,30 +751,37 @@ class ReportsWindow(QWidget):
 
         self.add_btn = QPushButton("+  Раздел")
         self.add_btn.setObjectName("primaryBtn")
-        self.add_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogNewFolder))
+        self.add_btn.setIcon(make_action_icon("add", self._current_theme))
         self.add_btn.clicked.connect(self.add_section)
 
         self.remove_last_btn = QPushButton("- Последний")
         self.remove_last_btn.setProperty("buttonType", "secondary")
+        self.remove_last_btn.setIcon(make_action_icon("remove", self._current_theme))
         self.remove_last_btn.clicked.connect(self.remove_last_section)
 
         self.theme_toggle_btn = QToolButton()
         self.theme_toggle_btn.setObjectName("themeToggleButton")
         self.theme_toggle_btn.setAutoRaise(False)
         self.theme_toggle_btn.setFixedSize(34, 30)
+        self.theme_toggle_btn.setIconSize(QSize(18, 18))
         self.theme_toggle_btn.clicked.connect(self.toggle_theme)
 
         self.settings_btn = QToolButton()
         self.settings_btn.setObjectName("settingsButton")
         self.settings_btn.setAutoRaise(False)
         self.settings_btn.setFixedSize(34, 30)
-        self.settings_btn.setText("⚙")
+        self.settings_btn.setText("")
+        self.settings_btn.setIcon(make_action_icon("settings", self._current_theme))
+        self.settings_btn.setIconSize(QSize(18, 18))
         self.settings_btn.setToolTip("Настройки")
         self.settings_btn.clicked.connect(self.open_settings_dialog)
 
         for button in (self.add_btn, self.remove_last_btn):
             button.setMinimumHeight(30)
             button.setIconSize(QSize(15, 15))
+            install_press_feedback(button)
+        for button in (self.theme_toggle_btn, self.settings_btn):
+            install_press_feedback(button)
         self.add_btn.setFixedWidth(104)
         self.remove_last_btn.setFixedWidth(112)
 
@@ -479,22 +836,22 @@ class ReportsWindow(QWidget):
 
         self.save_btn = QPushButton("Сохранить отчет")
         self.save_btn.setObjectName("saveBtn")
-        self.save_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        self.save_btn.setIcon(make_action_icon("save", self._current_theme))
         self.save_btn.clicked.connect(self.save_report)
 
         self.open_report_btn = QPushButton("Открыть отчет")
         self.open_report_btn.setProperty("buttonType", "secondary")
-        self.open_report_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        self.open_report_btn.setIcon(make_action_icon("open", self._current_theme))
         self.open_report_btn.clicked.connect(self.show_report_history)
 
         self.open_file_btn = QPushButton("Из файлов")
         self.open_file_btn.setProperty("buttonType", "secondary")
-        self.open_file_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView))
+        self.open_file_btn.setIcon(make_action_icon("file-open", self._current_theme))
         self.open_file_btn.clicked.connect(self.select_report_file)
 
         self.reset_cache_btn = QPushButton("Сброс черновика")
         self.reset_cache_btn.setObjectName("resetCacheBtn")
-        self.reset_cache_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.reset_cache_btn.setIcon(make_action_icon("reset", self._current_theme))
         self.reset_cache_btn.clicked.connect(lambda: self.reset_autosave_draft())
 
         self.sections_label = QLabel("Разделов: 0")
@@ -504,8 +861,10 @@ class ReportsWindow(QWidget):
         for button in (self.save_btn, self.open_report_btn, self.open_file_btn):
             button.setMinimumHeight(34)
             button.setIconSize(QSize(15, 15))
+            install_press_feedback(button)
         self.reset_cache_btn.setMinimumHeight(34)
         self.reset_cache_btn.setIconSize(QSize(15, 15))
+        install_press_feedback(self.reset_cache_btn)
         self.save_btn.setFixedWidth(178)
         self.open_report_btn.setFixedWidth(154)
         self.open_file_btn.setFixedWidth(126)
@@ -526,6 +885,7 @@ class ReportsWindow(QWidget):
         self.hero_panel = QFrame()
         self.hero_panel.setObjectName("heroPanel")
         self.hero_panel.setMinimumHeight(170)
+        apply_soft_shadow(self.hero_panel, blur_radius=26, y_offset=10, color=QColor(30, 42, 64, 22))
         hero_layout = QVBoxLayout(self.hero_panel)
         hero_layout.setContentsMargins(16, 16, 16, 16)
         hero_layout.setSpacing(6)
@@ -552,6 +912,7 @@ class ReportsWindow(QWidget):
     def _build_meta_group(self, parent_layout: QVBoxLayout):
         self.meta_group = QFrame()
         self.meta_group.setObjectName("metaGroup")
+        apply_soft_shadow(self.meta_group, blur_radius=20, y_offset=7)
         outer_layout = QVBoxLayout(self.meta_group)
         outer_layout.setContentsMargins(16, 14, 16, 16)
         outer_layout.setSpacing(10)
@@ -610,6 +971,7 @@ class ReportsWindow(QWidget):
         browse_btn.setObjectName("browseBtn")
         browse_btn.setFixedWidth(34)
         browse_btn.setFixedHeight(28)
+        install_press_feedback(browse_btn)
         browse_btn.clicked.connect(self.select_output_dir)
         path_row.addWidget(self.output_dir_input)
         path_row.addWidget(browse_btn)
@@ -714,6 +1076,7 @@ class ReportsWindow(QWidget):
         self.preview_shell = QFrame()
         self.preview_shell.setObjectName("previewShell")
         self.preview_shell.setMinimumWidth(320)
+        apply_soft_shadow(self.preview_shell, blur_radius=22, y_offset=8)
         preview_shell_layout = QVBoxLayout(self.preview_shell)
         preview_shell_layout.setContentsMargins(10, 10, 10, 10)
         preview_shell_layout.setSpacing(8)
@@ -782,6 +1145,7 @@ class ReportsWindow(QWidget):
         self.progress_shell = QFrame()
         self.progress_shell.setObjectName("progressShell")
         self.progress_shell.setMinimumHeight(104)
+        apply_soft_shadow(self.progress_shell, blur_radius=18, y_offset=6, color=QColor(30, 42, 64, 24))
         progress_shell_layout = QVBoxLayout(self.progress_shell)
         progress_shell_layout.setContentsMargins(8, 8, 8, 8)
         progress_shell_layout.setSpacing(6)
@@ -836,7 +1200,7 @@ class ReportsWindow(QWidget):
         general_config = self.config.get("general", {})
         base_dir = general_config.get("reports_dir", "reports")
         if not os.path.isabs(base_dir):
-            base_dir = os.path.join(get_project_root(), base_dir)
+            base_dir = os.path.join(get_writable_app_root(), base_dir)
         return os.path.join(base_dir, "text_reports")
 
     def get_session_cache_path(self) -> str:
@@ -844,12 +1208,12 @@ class ReportsWindow(QWidget):
         cache_path = general_config.get("session_cache_path")
         if cache_path:
             if not os.path.isabs(cache_path):
-                cache_path = os.path.join(get_project_root(), cache_path)
+                cache_path = os.path.join(get_writable_app_root(), cache_path)
             return cache_path
 
         base_dir = general_config.get("reports_dir", "reports")
         if not os.path.isabs(base_dir):
-            base_dir = os.path.join(get_project_root(), base_dir)
+            base_dir = os.path.join(get_writable_app_root(), base_dir)
         return os.path.join(base_dir, ".report_builder_session_cache.json")
 
     def get_report_store_path(self) -> str:
@@ -857,12 +1221,12 @@ class ReportsWindow(QWidget):
         store_path = general_config.get("report_store_path")
         if store_path:
             if not os.path.isabs(store_path):
-                store_path = os.path.join(get_project_root(), store_path)
+                store_path = os.path.join(get_writable_app_root(), store_path)
             return store_path
 
         base_dir = general_config.get("reports_dir", "reports")
         if not os.path.isabs(base_dir):
-            base_dir = os.path.join(get_project_root(), base_dir)
+            base_dir = os.path.join(get_writable_app_root(), base_dir)
         return os.path.join(base_dir, ".report_history.sqlite3")
 
     def effective_output_dir(self) -> str:
@@ -874,12 +1238,13 @@ class ReportsWindow(QWidget):
     def open_settings_dialog(self):
         dialog = SettingsDialog(self._user_settings, self)
         dialog.setStyleSheet(self._compose_stylesheet())
-        apply_windows_dark_frame(dialog, self._current_theme == "dark")
+        self._sync_native_frame(dialog)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 
         self._user_settings = dialog.values()
         self._config_section("ui")["theme"] = self._user_settings["theme"]
+        self._config_section("ui")["default_theme"] = self._user_settings["theme"]
         preferences = self._config_section("preferences")
         preferences["default_performer"] = self._user_settings["default_performer"]
         preferences["default_output_dir"] = self._user_settings["default_output_dir"]
@@ -912,7 +1277,7 @@ class ReportsWindow(QWidget):
     def _prepare_dialog(self, dialog: QFileDialog) -> QFileDialog:
         dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
         dialog.setStyleSheet(self._compose_stylesheet())
-        apply_windows_dark_frame(dialog, self._current_theme == "dark")
+        self._sync_native_frame(dialog)
         return dialog
 
     def select_output_dir(self):
@@ -1539,12 +1904,66 @@ class ReportsWindow(QWidget):
 
     # ---- Адаптивность ----
 
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange:
+            self._refresh_window_controls()
+        elif event.type() == QEvent.Type.WindowTitleChange and hasattr(self, "title_label"):
+            self.title_label.setText(self.windowTitle())
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._polish_visible_controls()
+        QTimer.singleShot(0, self._polish_visible_controls)
+        QTimer.singleShot(120, self._polish_visible_controls)
+
+    def eventFilter(self, watched, event):
+        if watched in self._title_drag_widgets:
+            if event.type() == QEvent.Type.MouseButtonDblClick and event.button() == Qt.MouseButton.LeftButton:
+                self._toggle_window_maximized()
+                return True
+            if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+                self._drag_start_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+                return True
+            if event.type() == QEvent.Type.MouseMove and self._drag_start_position is not None:
+                if self.isMaximized():
+                    self.showNormal()
+                    self._drag_start_position = QPoint(self.width() // 2, 18)
+                self.move(event.globalPosition().toPoint() - self._drag_start_position)
+                return True
+            if event.type() == QEvent.Type.MouseButtonRelease:
+                self._drag_start_position = None
+                return True
+        return super().eventFilter(watched, event)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self._update_responsive_layout()
+        if hasattr(self, "size_grip"):
+            grip_size = self.size_grip.size()
+            self.size_grip.move(
+                self.window_shell.width() - grip_size.width() - 4,
+                self.window_shell.height() - grip_size.height() - 4,
+            )
+            self.size_grip.setVisible(not self.isMaximized() and not self.isFullScreen())
 
     def closeEvent(self, event):
         self.save_session_cache()
+        tray_icon = getattr(self, "_tray_icon", None)
+        close_to_tray = bool(getattr(self, "_close_to_tray", False))
+        force_quit = bool(getattr(self, "_force_quit", False))
+        if close_to_tray and not force_quit and tray_icon is not None and tray_icon.isVisible():
+            event.ignore()
+            self.hide()
+            if not getattr(self, "_tray_hint_shown", False):
+                tray_icon.showMessage(
+                    "Конструктор отчетов",
+                    "Программа продолжает работать в трее.",
+                    QSystemTrayIcon.MessageIcon.Information,
+                    2200,
+                )
+                self._tray_hint_shown = True
+            return
         super().closeEvent(event)
 
     def _update_responsive_layout(self, *, force: bool = False):
