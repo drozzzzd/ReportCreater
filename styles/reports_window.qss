@@ -51,6 +51,11 @@ QSizeGrip#windowSizeGrip {
     background-color: transparent;
 }
 
+QFrame#windowResizeHandle {
+    background-color: transparent;
+    border: none;
+}
+
 QWidget#setupTab,
 QWidget#fillTab,
 QWidget#setupScrollContent,

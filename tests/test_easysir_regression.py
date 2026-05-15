@@ -60,6 +60,7 @@ class ReportBuilderStandaloneTests(unittest.TestCase):
         self.assertIsInstance(self.window.window_minimize_btn, QToolButton)
         self.assertIsInstance(self.window.window_maximize_btn, QToolButton)
         self.assertIsInstance(self.window.window_close_btn, QToolButton)
+        self.assertEqual(len(self.window._resize_handles), 8)
         self.assertEqual(len(self.window.sections), 1)
         self.assertGreaterEqual(self.window.width(), 980)
         self.assertIsNotNone(self.window.preview_shell)

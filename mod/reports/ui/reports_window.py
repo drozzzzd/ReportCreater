@@ -5,7 +5,7 @@ import json
 import os
 from datetime import datetime
 
-from PyQt6.QtCore import QEvent, QPoint, QRectF, QSize, Qt, QTimer
+from PyQt6.QtCore import QEvent, QPoint, QRect, QRectF, QSize, Qt, QTimer
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPalette, QPen, QRegion, QTextOption
 from PyQt6.QtWidgets import (
     QApplication,
@@ -509,6 +509,10 @@ class ReportsWindow(QWidget):
         self._window_control_buttons: set[QWidget] = set()
         self._title_drag_widgets: set[QWidget] = set()
         self._drag_start_position: QPoint | None = None
+        self._resize_handles: dict[str, QFrame] = {}
+        self._active_resize_edge: str | None = None
+        self._resize_start_position: QPoint | None = None
+        self._resize_start_geometry: QRect | None = None
         self._session_cache_path = self.get_session_cache_path()
         self._report_store = ReportStore(self.get_report_store_path())
         self._user_settings = self._load_user_settings()
@@ -688,6 +692,7 @@ class ReportsWindow(QWidget):
         self._build_setup_tab()
         self._build_fill_tab()
         self._build_tab_corner_actions()
+        self._build_resize_handles()
         self.main_tabs.currentChanged.connect(self._sync_tab_corner_actions)
         self._update_responsive_layout(force=True)
 
@@ -743,6 +748,55 @@ class ReportsWindow(QWidget):
         self._window_control_buttons.add(button)
         return button
 
+    def _build_resize_handles(self) -> None:
+        cursor_by_edge = {
+            "left": Qt.CursorShape.SizeHorCursor,
+            "right": Qt.CursorShape.SizeHorCursor,
+            "top": Qt.CursorShape.SizeVerCursor,
+            "bottom": Qt.CursorShape.SizeVerCursor,
+            "top-left": Qt.CursorShape.SizeFDiagCursor,
+            "bottom-right": Qt.CursorShape.SizeFDiagCursor,
+            "top-right": Qt.CursorShape.SizeBDiagCursor,
+            "bottom-left": Qt.CursorShape.SizeBDiagCursor,
+        }
+        for edge, cursor in cursor_by_edge.items():
+            handle = QFrame(self)
+            handle.setObjectName("windowResizeHandle")
+            handle.setProperty("edge", edge)
+            handle.setCursor(cursor)
+            handle.setMouseTracking(True)
+            handle.installEventFilter(self)
+            self._resize_handles[edge] = handle
+        self._position_resize_handles()
+
+    def _position_resize_handles(self) -> None:
+        if not self._resize_handles:
+            return
+
+        visible = not self.isMaximized() and not self.isFullScreen()
+        for handle in self._resize_handles.values():
+            handle.setVisible(visible)
+        if not visible:
+            return
+
+        width = self.width()
+        height = self.height()
+        thickness = 8
+        corner = 18
+        geometries = {
+            "top": QRect(corner, 0, max(0, width - corner * 2), thickness),
+            "bottom": QRect(corner, height - thickness, max(0, width - corner * 2), thickness),
+            "left": QRect(0, corner, thickness, max(0, height - corner * 2)),
+            "right": QRect(width - thickness, corner, thickness, max(0, height - corner * 2)),
+            "top-left": QRect(0, 0, corner, corner),
+            "top-right": QRect(width - corner, 0, corner, corner),
+            "bottom-left": QRect(0, height - corner, corner, corner),
+            "bottom-right": QRect(width - corner, height - corner, corner, corner),
+        }
+        for edge, handle in self._resize_handles.items():
+            handle.setGeometry(geometries[edge])
+            handle.raise_()
+
     def _polish_visible_controls(self) -> None:
         widgets = [
             getattr(self, "save_btn", None),
@@ -777,6 +831,31 @@ class ReportsWindow(QWidget):
             self.WINDOW_CORNER_RADIUS,
         )
         self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+    def _resize_window_from_handle(self, global_position: QPoint) -> None:
+        if (
+            self._active_resize_edge is None
+            or self._resize_start_position is None
+            or self._resize_start_geometry is None
+        ):
+            return
+
+        delta = global_position - self._resize_start_position
+        geometry = QRect(self._resize_start_geometry)
+        min_width = self.minimumWidth()
+        min_height = self.minimumHeight()
+        edge = self._active_resize_edge
+
+        if "left" in edge:
+            geometry.setLeft(min(geometry.left() + delta.x(), geometry.right() - min_width + 1))
+        if "right" in edge:
+            geometry.setRight(max(geometry.right() + delta.x(), geometry.left() + min_width - 1))
+        if "top" in edge:
+            geometry.setTop(min(geometry.top() + delta.y(), geometry.bottom() - min_height + 1))
+        if "bottom" in edge:
+            geometry.setBottom(max(geometry.bottom() + delta.y(), geometry.top() + min_height - 1))
+
+        self.setGeometry(geometry)
 
     def _build_tab_corner_actions(self):
         self.tab_actions = QFrame()
@@ -1944,6 +2023,7 @@ class ReportsWindow(QWidget):
         super().changeEvent(event)
         if event.type() == QEvent.Type.WindowStateChange:
             self._update_window_mask()
+            self._position_resize_handles()
             self._refresh_window_controls()
         elif event.type() == QEvent.Type.WindowTitleChange and hasattr(self, "title_label"):
             self.title_label.setText(self.windowTitle())
@@ -1951,11 +2031,27 @@ class ReportsWindow(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         self._update_window_mask()
+        self._position_resize_handles()
         self._polish_visible_controls()
         QTimer.singleShot(0, self._polish_visible_controls)
         QTimer.singleShot(120, self._polish_visible_controls)
 
     def eventFilter(self, watched, event):
+        if watched in self._resize_handles.values():
+            if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+                self._active_resize_edge = str(watched.property("edge"))
+                self._resize_start_position = event.globalPosition().toPoint()
+                self._resize_start_geometry = self.geometry()
+                return True
+            if event.type() == QEvent.Type.MouseMove and self._active_resize_edge is not None:
+                self._resize_window_from_handle(event.globalPosition().toPoint())
+                return True
+            if event.type() == QEvent.Type.MouseButtonRelease:
+                self._active_resize_edge = None
+                self._resize_start_position = None
+                self._resize_start_geometry = None
+                return True
+
         if watched in self._title_drag_widgets:
             if event.type() == QEvent.Type.MouseButtonDblClick and event.button() == Qt.MouseButton.LeftButton:
                 self._toggle_window_maximized()
@@ -1978,6 +2074,7 @@ class ReportsWindow(QWidget):
         super().resizeEvent(event)
         self._update_window_mask()
         self._update_responsive_layout()
+        self._position_resize_handles()
         if hasattr(self, "size_grip"):
             grip_size = self.size_grip.size()
             self.size_grip.move(
