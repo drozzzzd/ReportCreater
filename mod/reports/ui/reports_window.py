@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 from PyQt6.QtCore import QEvent, QPoint, QRectF, QSize, Qt, QTimer
-from PyQt6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QTextOption
+from PyQt6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPalette, QPen, QRegion, QTextOption
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -161,6 +161,12 @@ QGroupBox::title {
     color: #F4F7FB;
 }
 
+QFrame#reportSectionCard {
+    background-color: #171B22;
+    border: none;
+    border-radius: 0;
+}
+
 QLabel,
 QLabel#heroTitle,
 QLabel#panelTitle,
@@ -263,6 +269,23 @@ QPushButton#resetCacheBtn {
     background-color: #202633;
     color: #F4F7FB;
     border-color: #3A4558;
+}
+
+QPushButton[small="true"] {
+    background-color: #202633;
+    color: #DDE6F5;
+    border: 1px solid #3A4558;
+}
+
+QPushButton[small="true"]:hover {
+    background-color: #2C3546;
+    color: #FFFFFF;
+    border-color: #4B5A72;
+}
+
+QPushButton[small="true"]:pressed {
+    background-color: #1C2230;
+    border-color: #526077;
 }
 
 QMenu,
@@ -460,6 +483,7 @@ class HeroIllustration(QWidget):
 
 class ReportsWindow(QWidget):
     SESSION_CACHE_VERSION = 1
+    WINDOW_CORNER_RADIUS = 16
 
     def __init__(self, config: dict, config_path: str = "", parent=None):
         super().__init__(parent)
@@ -640,7 +664,7 @@ class ReportsWindow(QWidget):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(8, 8, 8, 8)
+        root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
         self.window_shell = QFrame()
@@ -741,6 +765,18 @@ class ReportsWindow(QWidget):
             widget.update()
         if hasattr(self, "window_shell"):
             self.window_shell.update()
+
+    def _update_window_mask(self) -> None:
+        if self.isMaximized() or self.isFullScreen():
+            self.clearMask()
+            return
+        path = QPainterPath()
+        path.addRoundedRect(
+            QRectF(self.rect()),
+            self.WINDOW_CORNER_RADIUS,
+            self.WINDOW_CORNER_RADIUS,
+        )
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
 
     def _build_tab_corner_actions(self):
         self.tab_actions = QFrame()
@@ -1021,8 +1057,8 @@ class ReportsWindow(QWidget):
         self.fill_tab = QWidget()
         self.fill_tab.setObjectName("fillTab")
         fill_layout = QVBoxLayout(self.fill_tab)
-        fill_layout.setContentsMargins(14, 14, 16, 18)
-        fill_layout.setSpacing(12)
+        fill_layout.setContentsMargins(0, 0, 0, 0)
+        fill_layout.setSpacing(0)
 
         self.content_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.content_splitter.setObjectName("mainContentSplitter")
@@ -1907,12 +1943,14 @@ class ReportsWindow(QWidget):
     def changeEvent(self, event):
         super().changeEvent(event)
         if event.type() == QEvent.Type.WindowStateChange:
+            self._update_window_mask()
             self._refresh_window_controls()
         elif event.type() == QEvent.Type.WindowTitleChange and hasattr(self, "title_label"):
             self.title_label.setText(self.windowTitle())
 
     def showEvent(self, event):
         super().showEvent(event)
+        self._update_window_mask()
         self._polish_visible_controls()
         QTimer.singleShot(0, self._polish_visible_controls)
         QTimer.singleShot(120, self._polish_visible_controls)
@@ -1938,6 +1976,7 @@ class ReportsWindow(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self._update_window_mask()
         self._update_responsive_layout()
         if hasattr(self, "size_grip"):
             grip_size = self.size_grip.size()
